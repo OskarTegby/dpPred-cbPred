@@ -61,3 +61,18 @@ mbuild
 # Pin3 output
 frontend/pin-frontend/obj-intel64
 sift/recorder/obj-intel64
+
+# another repo
+benchmarks/
+
+# work notes
+code-notes.md
+fixes.md
+plan.md
+workloads.md
+sniper-manual.pdf
+
+# tests
+test/api/api
+test/fft/fft
+
