@@ -65,3 +65,18 @@ sift/recorder/obj-intel64
 # Machine-specific symlinks (depend on local filesystem)
 frontend/pin-frontend/sift/
 sift/recorder/sift/
+
+# another repo
+benchmarks/
+
+# work notes
+code-notes.md
+fixes.md
+plan.md
+workloads.md
+sniper-manual.pdf
+
+# tests
+test/api/api
+test/fft/fft
+
