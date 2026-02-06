@@ -73,6 +73,5 @@ workloads.md
 sniper-manual.pdf
 
 # tests
-test/api/api
-test/fft/fft
+test
 
