@@ -39,7 +39,7 @@ TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UIn
    registerStatsMetric(name, core_id, "allocs", &m_alloc);
 }
 
-UInt32 TLB::give_size()
+UInt32 TLB::get_size()
 {
    return m_size;
 }
@@ -67,7 +67,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
        lastPC = address;
 
    if (hit) {
-       if (give_size() == llt_size) {
+       if (get_size() == llt_size) {
            curHit[temp]++;
        }
        return true;
@@ -118,7 +118,6 @@ addRecentPFN(IntPtr addr) {
 bool
 TLB::shadow_table_search (IntPtr vpn)
 {
-    bool res = false;
     for (uint64_t i = 0; i < shadow_table.size(); i++)
     {
         if (shadow_table[i] == vpn)
@@ -126,7 +125,7 @@ TLB::shadow_table_search (IntPtr vpn)
             return true;
         }
     }
-    return res;
+    return false;
 }
 
 void
@@ -142,7 +141,7 @@ TLB::shadow_table_insert (IntPtr vpn)
 void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
-   bool in_llt = give_size() == llt_size;
+   bool in_llt = get_size() == llt_size;
    uint64_t page_bitmask = 0xfffffffffffff000; 
 
    IntPtr temp_vpn = address & page_bitmask;
@@ -156,8 +155,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 
    if (in_llt)
    {
-       bool res = shadow_table_search(temp_vpn);
-       if (res == true)
+       if (shadow_table_search(temp_vpn))
        {
            for (int i = 0; i < 64; i++)
            {
@@ -167,7 +165,8 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    }
 
    if (in_llt) {
-    if (hitCounter[temp_hash_vpn][temp_hash_pc] > bypass_thd) {
+    bool sat_thd = hitCounter[temp_hash_vpn][temp_hash_pc] > bypass_thd; 
+    if (sat_thd) {
         ++m_bypass;
         shadow_table_insert(temp_vpn);
         addRecentPFN(temp_vpn);
