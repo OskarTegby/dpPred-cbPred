@@ -141,11 +141,13 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = give_size() == llt_size;
    uint64_t page_bitmask = 0xfffffffffffff000; 
-   if (in_llt)
-        insert_pc[(address & page_bitmask)] = lastPC;
-
+  
    IntPtr temp_vpn = address & page_bitmask;
-   IntPtr temp_hash_vpn = findHash ((address & page_bitmask), 4);
+
+   if (in_llt)
+        insert_pc[temp_vpn] = lastPC;
+
+   IntPtr temp_hash_vpn = findHash (temp_vpn, 4);
    IntPtr temp_hash_pc =  findHash (lastPC, 6);
    ++m_alloc;
 
@@ -164,10 +166,10 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    if (in_llt && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
         ++m_bypass;
         shadow_table_insert (temp_vpn);
-	addRecentPFN(address & page_bitmask);
+	addRecentPFN(temp_vpn);
         return;
    } else if (in_llt) {
-        curHit[(address & page_bitmask)] = 0;
+        curHit[temp_vpn] = 0;
    }
    bool eviction;
    IntPtr evict_addr;
