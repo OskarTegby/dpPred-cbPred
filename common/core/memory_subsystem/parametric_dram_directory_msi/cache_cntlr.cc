@@ -886,7 +886,7 @@ CacheCntlr::accessLLCSw(IntPtr address)
             uint64_t evict_tag = llc[setIndex][15];
             if (curHitLLC.count(evict_tag))
             {
-                if(!curHitLLC[evict_tag])
+                if(curHitLLC[evict_tag] == 0)
                 {
                     bhist[findHash(evict_tag, block_bits)].second++;
                     if (bhist[findHash(evict_tag, block_bits)].second > 16)
