@@ -21,7 +21,10 @@ uint64_t bypass_thd = 6;
 uint64_t pc_bits = 6;
 uint64_t vpn_bits = 4;
 uint64_t index_size = 32;
-uint64_t page_bitmask = 0xfffffffffffff000; 
+
+//TODO: Why isn't the bit-shift 12?
+uint64_t page_bitmask = 0xfffffffffffff000;
+uint64_t page_bitshift = 17;
 
 std::map<IntPtr, IntPtr> insert_pc;
 
@@ -110,7 +113,7 @@ TLB::findHash(IntPtr index, uint64_t bits)
 
 void
 TLB::add_recent_pfn(IntPtr address) {
-	address >>= 17;
+	address >>= page_bitshift;
 	if (recent_pfn.size() < pfq_size) {
 		recent_pfn.push_back(address);
 	} else {
