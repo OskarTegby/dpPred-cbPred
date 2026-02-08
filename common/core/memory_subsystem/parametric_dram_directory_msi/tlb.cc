@@ -109,7 +109,7 @@ TLB::findHash(IntPtr index, uint64_t bits)
 }
 
 void
-addRecentPFN(IntPtr address) {
+TLB::add_recent_pfn(IntPtr address) {
 	address >>= 17;
 	if (recentPFN.size() < pfq_size) {
 		recentPFN.push_back(address);
@@ -166,7 +166,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
       if (sat_thd) {
           ++m_bypass;
           shadow_table_insert(temp_vpn);
-          addRecentPFN(temp_vpn);
+          add_recent_pfn(temp_vpn);
           return;
       } else { 
           curHit[temp_vpn] = 0;
