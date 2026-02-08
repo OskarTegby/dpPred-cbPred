@@ -185,7 +185,8 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 
         IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
         IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
-        if (!curHit[evict_vpn]) {
+
+        if (curHit[evict_vpn] == 0) {
             hitCounter[ev_vpn_hash][ev_pc_hash]++;
         } else {
             hitCounter[ev_vpn_hash][ev_pc_hash] = 0;
