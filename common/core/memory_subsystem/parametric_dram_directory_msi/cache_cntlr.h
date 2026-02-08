@@ -416,7 +416,7 @@ namespace ParametricDramDirectoryMSI
          void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
          void accessLLCSwdef(IntPtr address);
          bool recentPFNContains(IntPtr tag);
-	 IntPtr findHash(IntPtr, uint64_t);
+         IntPtr findHash(IntPtr index, uint64_t bits);
 
          friend class CacheCntlrList;
          friend class MemoryManager;
