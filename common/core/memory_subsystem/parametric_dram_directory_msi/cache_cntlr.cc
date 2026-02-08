@@ -17,6 +17,8 @@
 std::map<uint64_t, std::pair<uint64_t, uint64_t> > bhist;
 std::map<uint64_t, uint64_t> curHitLLC;
 
+uint64_t index_size = 32;
+
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
 // LLC Data Structure
@@ -782,18 +784,17 @@ CacheCntlr::doPrefetch(IntPtr prefetch_address, SubsecondTime t_start)
 
 
 IntPtr 
-CacheCntlr::findHash (IntPtr ev_vpn, uint64_t bits)
+CacheCntlr::findHash(IntPtr index, uint64_t bits)
 {
-   IntPtr last_part = ev_vpn;
-   IntPtr lph = 0;
-   int max_iter = 32 / bits;
+   IntPtr remaining = index;
+   IntPtr hash = 0;
+   int max_iter = index_size / bits;
    for (int i = 0; i < max_iter; ++i) {
-	lph ^= (last_part % (1 << bits));
-	last_part >>= bits;
+      hash ^= (remaining % (1 << bits));
+      remaining >>= bits;
    }
-   return lph;
+   return hash;
 }
-
 
 uint64_t
 CacheCntlr::getTagSw(IntPtr address)
