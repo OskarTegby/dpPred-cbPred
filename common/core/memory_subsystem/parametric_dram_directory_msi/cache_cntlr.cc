@@ -784,10 +784,8 @@ CacheCntlr::doPrefetch(IntPtr prefetch_address, SubsecondTime t_start)
    releaseStackLock(prefetch_address);
 }
 
-
 IntPtr 
-CacheCntlr::findHash(IntPtr index, uint64_t bits)
-{
+CacheCntlr::findHash(IntPtr index, uint64_t bits) {
    IntPtr remaining = index;
    IntPtr hash = 0;
    int max_iter = index_size / bits;
@@ -799,45 +797,41 @@ CacheCntlr::findHash(IntPtr index, uint64_t bits)
 }
 
 uint64_t
-CacheCntlr::getTagSw(IntPtr address)
-{
+CacheCntlr::getTagSw(IntPtr address) {
     return (address >> 17);
 }
 
 uint64_t
-CacheCntlr::getSetIndexSw(IntPtr address)
-{
+CacheCntlr::getSetIndexSw(IntPtr address) {
     IntPtr throwOffset = (address >> 6);
-   return (throwOffset % 2048);
+    return (throwOffset % 2048);
 }
 
 bool
 CacheCntlr::recentPFNContains(IntPtr tag) {
     std::deque<IntPtr>::iterator it = std::find(recent_pfn.begin(), recent_pfn.end(), tag);
-    if (it != recent_pfn.end()) { return true;}
+    if (it != recent_pfn.end()) {
+        return true;
+    }
     return false;
 }
 
 void
-CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex)
-{
-    for(int i=pivotIndex; i>=1 ; i--)
-    {
-        llc[setIndex][i] = llc[setIndex][i-1];
+CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex) {
+    for(int i = pivotIndex; i >= 1 ; i--) {
+        llc[setIndex][i] = llc[setIndex][i - 1];
     }
    
     // llc insertion takes place here
     llc[setIndex][0] = latestTag;
 
-    if (recentPFNContains(latestTag))
-    {
+    if (recentPFNContains(latestTag)) {
         curHitLLC[latestTag] = 0;
     }
-}   
+}
 
 void
-CacheCntlr::accessLLCSw(IntPtr address)
-{
+CacheCntlr::accessLLCSw(IntPtr address) {
     llcAcc++;  // llcAcc tracks software LLC accesses
 
     bool isMiss = true;
@@ -847,15 +841,12 @@ CacheCntlr::accessLLCSw(IntPtr address)
     uint64_t setIndex = getSetIndexSw(address);
     uint64_t tag = getTagSw(address);
  
-    for(uint64_t i=0; i<curSize[setIndex]; i++)
-    {
-        if(llc[setIndex][i] == tag)     // software LLC hit
-        {
+    for(uint64_t i = 0; i < curSize[setIndex]; i++) {
+        if(llc[setIndex][i] == tag) {     // software LLC hit
             isMiss = false;
             pivotIndex = i;
             
-            if(curHitLLC.count(tag))
-            {
+            if(curHitLLC.count(tag)) {
                 curHitLLC[tag]++;
             }
 
@@ -863,52 +854,38 @@ CacheCntlr::accessLLCSw(IntPtr address)
         }
     }
     
-    if (isMiss == true)
-    {
+    if (isMiss) {
         llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
-        if(curSize[setIndex] < 16)
-        {
-            pivotIndex = curSize[setIndex];      
+        if(curSize[setIndex] < 16) {
+            pivotIndex = curSize[setIndex];
             curSize[setIndex]++;
-        }
-        else if(curSize[setIndex] == 16)  
-        {
-
-            if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd)
-            {
+        } else if(curSize[setIndex] == 16) {
+            if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd) {
                 llcBypass++;             // llcBypass tracks software LLC bypass count
                 return;                  // software LLC bypassing
             }
 
            // Now eviction will surely occur
-
             uint64_t evict_tag = llc[setIndex][15];
-            if (curHitLLC.count(evict_tag))
-            {
-                if(curHitLLC[evict_tag] == 0)
-                {
+            if (curHitLLC.count(evict_tag)) {
+                if(curHitLLC[evict_tag] == 0) {
                     bhist[findHash(evict_tag, block_bits)].second++;
                     if (bhist[findHash(evict_tag, block_bits)].second > 16)
                     {
                         bhist[findHash(evict_tag, block_bits)].second = 16;
                     }
-                }
-                else
-                {
+                } else {
                     bhist[findHash(evict_tag, block_bits)].second = 0;
                 }
-            }                
+            }
  
             pivotIndex = 16;
-           
         }
     }
 
     updateLLCSw(tag, pivotIndex, setIndex);
 }
-    
-
 
 /*****************************************************************************
  * operations called by cache on next-level cache
