@@ -150,7 +150,6 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    IntPtr temp_vpn = address & page_bitmask;
    IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
    IntPtr temp_hash_pc  = findHash(lastPC, pc_bits);
-   ++m_alloc;
 
    if (in_llt) {
       insert_pc[temp_vpn] = lastPC;
@@ -178,6 +177,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    IntPtr evict_addr; 
    CacheBlockInfo evict_block_info;
 
+   ++m_alloc;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
    if (eviction && in_llt) {
         IntPtr evict_vpn = evict_addr & page_bitmask; 
