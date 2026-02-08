@@ -7,10 +7,10 @@
 namespace ParametricDramDirectoryMSI
 {
 
-std::deque<IntPtr> recentPFN;
-uint64_t pfq_size = 8;
-
 IntPtr lastPC;
+
+std::deque<IntPtr> recent_pfn;
+uint64_t pfq_size = 8;
 
 std::deque<IntPtr> shadow_table;
 uint64_t shadow_table_size = 2;
@@ -111,11 +111,11 @@ TLB::findHash(IntPtr index, uint64_t bits)
 void
 TLB::add_recent_pfn(IntPtr address) {
 	address >>= 17;
-	if (recentPFN.size() < pfq_size) {
-		recentPFN.push_back(address);
+	if (recent_pfn.size() < pfq_size) {
+		recent_pfn.push_back(address);
 	} else {
-		recentPFN.pop_front();
-		recentPFN.push_back(address);
+		recent_pfn.pop_front();
+		recent_pfn.push_back(address);
 	}
 }
 
