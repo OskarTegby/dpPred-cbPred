@@ -99,8 +99,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
 }
 
 IntPtr
-TLB::findHash(IntPtr index, uint64_t bits)
-{
+TLB::findHash(IntPtr index, uint64_t bits) {
    IntPtr remaining = index;
    IntPtr hash = 0;
    int max_iter = index_size / bits;
