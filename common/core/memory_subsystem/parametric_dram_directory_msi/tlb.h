@@ -25,7 +25,7 @@ namespace ParametricDramDirectoryMSI
          UInt64 m_access, m_miss, m_alloc, m_bypass;
          UInt32 m_conf_counter = 2;
       public:
-         std::map<IntPtr, std::map<IntPtr, uint64_t>> hitCounter;
+         std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
          std::map<IntPtr, uint64_t> curHit;
 
          TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count = 2);

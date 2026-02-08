@@ -158,11 +158,11 @@ TLB::allocate(IntPtr address, SubsecondTime now)
       {
           for (uint64_t i = 0; i < 64; i++)
           {
-              hitCounter[temp_hash_vpn][i] = 0;
+              phist[temp_hash_vpn][i] = 0;
           }
       }
 
-      bool sat_thd = hitCounter[temp_hash_vpn][temp_hash_pc] > bypass_thd; 
+      bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > bypass_thd; 
       if (sat_thd) {
           ++m_bypass;
           shadow_table_insert(temp_vpn);
@@ -187,9 +187,9 @@ TLB::allocate(IntPtr address, SubsecondTime now)
         IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
 
         if (curHit[evict_vpn] == 0) {
-            hitCounter[ev_vpn_hash][ev_pc_hash]++;
+            phist[ev_vpn_hash][ev_pc_hash]++;
         } else {
-            hitCounter[ev_vpn_hash][ev_pc_hash] = 0;
+            phist[ev_vpn_hash][ev_pc_hash] = 0;
         }
    }
 }
