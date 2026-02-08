@@ -55,7 +55,8 @@ TLB::setDeadBit (IntPtr address){
 bool
 TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mptr, bool allocate_on_miss)
 {
-   IntPtr temp = address & 0xfffffffffffff000;
+   uint64_t page_bitmask = 0xfffffffffffff000; 
+   IntPtr temp = address & page_bitmask;
    bool hit = m_cache.accessSingleLine(address, Cache::LOAD, NULL, 0, now, true);
    m_access++;
 
@@ -138,15 +139,17 @@ TLB::shadow_table_insert (IntPtr vpn)
 void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
-   if (give_size() == llt_size)
-        insert_pc[(address & 0xfffffffffffff000)] = lastPC;
+   bool in_llt = give_size() == llt_size;
+   uint64_t page_bitmask = 0xfffffffffffff000; 
+   if (in_llt)
+        insert_pc[(address & page_bitmask)] = lastPC;
 
-   IntPtr temp_vpn = address & 0xfffffffffffff000;
-   IntPtr temp_hash_vpn = findHash ((address & 0xfffffffffffff000), 4);
+   IntPtr temp_vpn = address & page_bitmask;
+   IntPtr temp_hash_vpn = findHash ((address & page_bitmask), 4);
    IntPtr temp_hash_pc =  findHash (lastPC, 6);
    ++m_alloc;
 
-   if (give_size() == llt_size)
+   if (in_llt)
    {
        bool res = shadow_table_search (temp_vpn);
        if (res == true)
@@ -158,23 +161,23 @@ TLB::allocate(IntPtr address, SubsecondTime now)
        }
    }
 
-   if (give_size() == llt_size && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
+   if (in_llt && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
         ++m_bypass;
         shadow_table_insert (temp_vpn);
-	addRecentPFN(address & 0xfffffffffffff000);
+	addRecentPFN(address & page_bitmask);
         return;
-   } else if (give_size() == llt_size) {
-        curHit[(address & 0xfffffffffffff000)] = 0;
+   } else if (in_llt) {
+        curHit[(address & page_bitmask)] = 0;
    }
    bool eviction;
    IntPtr evict_addr;
    CacheBlockInfo evict_block_info;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && give_size() == llt_size) {
+   if (eviction && in_llt) {
 
-        IntPtr ev_vpn_hash = findHash ((evict_addr & 0xfffffffffffff000), 4);
-        IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & 0xfffffffffffff000)]), 6);
-        if (!curHit[(evict_addr & 0xfffffffffffff000)]){
+        IntPtr ev_vpn_hash = findHash ((evict_addr & page_bitmask), 4);
+        IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & page_bitmask)]), 6);
+        if (!curHit[(evict_addr & page_bitmask)]){
                 hitCounter[ev_vpn_hash][ev_pc_hash]++;
         } else {
                 hitCounter[ev_vpn_hash][ev_pc_hash] = 0;
