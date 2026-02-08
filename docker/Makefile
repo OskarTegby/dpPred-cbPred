@@ -8,6 +8,9 @@ all: $(DOCKER_FILE)
 run-root:
 	docker run --privileged --rm -it -v "${HOME}:${HOME}" $(DOCKER_IMAGE)
 
+run-detached:
+	@docker run --privileged -d -v "${HOME}:${HOME}" --user $(shell id -u):$(shell id -g) -w "${PWD}" $(DOCKER_IMAGE) tail -f /dev/null
+
 run:
 	docker run --privileged --rm -it -v "${HOME}:${HOME}" --user $(shell id -u):$(shell id -g) -w "${PWD}" $(DOCKER_IMAGE)
 
