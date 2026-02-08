@@ -13,6 +13,7 @@ IntPtr lastPC;
 
 std::deque<IntPtr> shadow_table;
 uint64_t shadow_table_size = 2;
+uint64_t llt_size = 1024;
 
 std::map<IntPtr, IntPtr> insert_pc;
 
@@ -62,7 +63,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
        lastPC = address;
 
    if (hit) {
-       if (give_size() == 1024) {
+       if (give_size() == llt_size) {
            curHit[temp]++;
        }
        return true;
@@ -137,7 +138,7 @@ TLB::shadow_table_insert (IntPtr vpn)
 void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
-   if (give_size() == 1024)
+   if (give_size() == llt_size)
         insert_pc[(address & 0xfffffffffffff000)] = lastPC;
 
    IntPtr temp_vpn = address & 0xfffffffffffff000;
@@ -145,7 +146,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    IntPtr temp_hash_pc =  findHash (lastPC, 6);
    ++m_alloc;
 
-   if (give_size() == 1024)
+   if (give_size() == llt_size)
    {
        bool res = shadow_table_search (temp_vpn);
        if (res == true)
@@ -157,19 +158,19 @@ TLB::allocate(IntPtr address, SubsecondTime now)
        }
    }
 
-   if (give_size() == 1024 && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
+   if (give_size() == llt_size && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
         ++m_bypass;
         shadow_table_insert (temp_vpn);
 	addRecentPFN(address & 0xfffffffffffff000);
         return;
-   } else if (give_size() == 1024) {
+   } else if (give_size() == llt_size) {
         curHit[(address & 0xfffffffffffff000)] = 0;
    }
    bool eviction;
    IntPtr evict_addr;
    CacheBlockInfo evict_block_info;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && give_size() == 1024) {
+   if (eviction && give_size() == llt_size) {
 
         IntPtr ev_vpn_hash = findHash ((evict_addr & 0xfffffffffffff000), 4);
         IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & 0xfffffffffffff000)]), 6);
