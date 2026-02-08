@@ -8,7 +8,9 @@ else:
   pin_home = os.getenv('PIN_HOME')
 
 headerfile = None
-for filebase in ('source/include/pin/gen/cc_used_ia32_l.CVH', 'source/include/gen/cc_used_ia32_l.CVH'):
+for filebase in ('source/include/pin/gen/cc_used_ia32_l.CVH',
+                 'source/include/pin/pin_version.h',
+                 'source/include/gen/cc_used_ia32_l.CVH'):
   filename = os.path.join(pin_home, filebase)
   if os.path.exists(filename):
     headerfile = filename
