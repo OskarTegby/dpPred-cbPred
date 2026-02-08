@@ -97,7 +97,7 @@ TLB::findHash (IntPtr ev_vpn, uint64_t bits)
    IntPtr last_part = ev_vpn;
    IntPtr lph = 0;
    int max_iter = 32 / bits;
-   for (int i = 0; i < max_iter; ++i) {
+   for (uint64_t i = 0; i < max_iter; ++i) {
         lph ^= (last_part % (1 << bits));
         last_part >>= bits;
    }
@@ -157,7 +157,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    {
        if (shadow_table_search(temp_vpn))
        {
-           for (int i = 0; i < 64; i++)
+           for (uint64_t i = 0; i < 64; i++)
            {
                hitCounter[temp_hash_vpn][i] = 0;
            }
