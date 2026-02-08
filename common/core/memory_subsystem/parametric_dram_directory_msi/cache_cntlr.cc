@@ -809,11 +809,7 @@ CacheCntlr::getSetIndexSw(IntPtr address) {
 
 bool
 CacheCntlr::recentPFNContains(IntPtr tag) {
-    std::deque<IntPtr>::iterator it = std::find(recent_pfn.begin(), recent_pfn.end(), tag);
-    if (it != recent_pfn.end()) {
-        return true;
-    }
-    return false;
+    return std::find(recent_pfn.begin(), recent_pfn.end(), tag) != recent_pfn.end();
 }
 
 void
