@@ -141,7 +141,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = give_size() == llt_size;
    uint64_t page_bitmask = 0xfffffffffffff000; 
-  
+
    IntPtr temp_vpn = address & page_bitmask;
 
    if (in_llt)
@@ -171,15 +171,18 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    } else if (in_llt) {
         curHit[temp_vpn] = 0;
    }
+
    bool eviction;
-   IntPtr evict_addr;
+   IntPtr evict_addr; 
    CacheBlockInfo evict_block_info;
+
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
    if (eviction && in_llt) {
+        IntPtr evict_page = evict_addr & page_bitmask; 
 
-        IntPtr ev_vpn_hash = findHash ((evict_addr & page_bitmask), 4);
-        IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & page_bitmask)]), 6);
-        if (!curHit[(evict_addr & page_bitmask)]){
+        IntPtr ev_vpn_hash = findHash (evict_page, 4);
+        IntPtr ev_pc_hash = findHash ((insert_pc[evict_page]), 6);
+        if (!curHit[evict_page]){
                 hitCounter[ev_vpn_hash][ev_pc_hash]++;
         } else {
                 hitCounter[ev_vpn_hash][ev_pc_hash] = 0;
