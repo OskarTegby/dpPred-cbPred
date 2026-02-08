@@ -18,6 +18,7 @@ std::map<uint64_t, std::pair<uint64_t, uint64_t> > bhist;
 std::map<uint64_t, uint64_t> curHitLLC;
 
 uint64_t index_size = 32;
+uint64_t bypass_thd = 6;
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
@@ -873,7 +874,7 @@ CacheCntlr::accessLLCSw(IntPtr address)
         else if(curSize[setIndex] == 16)  
         {
 
-            if (recentPFNContains(tag) && bhist[findHash(tag, 12)].second > 6)
+            if (recentPFNContains(tag) && bhist[findHash(tag, 12)].second > bypass_thd)
             {
                 llcBypass++;             // llcBypass tracks software LLC bypass count
                 return;                  // software LLC bypassing
