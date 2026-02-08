@@ -17,9 +17,12 @@
 std::map<uint64_t, std::pair<uint64_t, uint64_t> > bhist;
 std::map<uint64_t, uint64_t> curHitLLC;
 
+uint64_t bypass_thd = 6;
+
 uint64_t block_bits = 12;
 uint64_t index_size = 32;
-uint64_t bypass_thd = 6;
+
+uint64_t page_bitshift = 17;
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
@@ -798,7 +801,7 @@ CacheCntlr::findHash(IntPtr index, uint64_t bits) {
 
 uint64_t
 CacheCntlr::getTagSw(IntPtr address) {
-    return (address >> 17);
+    return (address >> page_bitshift);
 }
 
 uint64_t
