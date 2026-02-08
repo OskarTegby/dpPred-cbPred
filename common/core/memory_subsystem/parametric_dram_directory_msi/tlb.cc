@@ -14,6 +14,7 @@ IntPtr lastPC;
 std::deque<IntPtr> shadow_table;
 uint64_t shadow_table_size = 2;
 uint64_t llt_size = 1024;
+uint64_t bypass_thd = 6;
 
 std::map<IntPtr, IntPtr> insert_pc;
 
@@ -163,7 +164,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
        }
    }
 
-   if (in_llt && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
+   if (in_llt && hitCounter[temp_hash_vpn][temp_hash_pc] > bypass_thd) {
         ++m_bypass;
         shadow_table_insert(temp_vpn);
         addRecentPFN(temp_vpn);
