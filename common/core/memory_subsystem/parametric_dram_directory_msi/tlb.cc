@@ -146,6 +146,31 @@ TLB::shadow_table_insert(IntPtr vpn)
 }
 
 void
+TLB::flushing_vpn_column(IntPtr temp_hash_vpn)
+{
+    uint64_t max_hash = 1ULL << pc_bits; 
+    for (uint64_t pc_hash = 0; pc_hash < max_hash; pc_hash++) {
+        phist[temp_hash_vpn][pc_hash] = 0;
+    }
+}
+
+void
+TLB::updating_phist(IntPtr evict_addr)
+{
+    IntPtr evict_vpn = evict_addr & page_bitmask; 
+    IntPtr evict_pc  = insert_pc[evict_vpn];
+
+    IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
+    IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
+
+    if (curHit[evict_vpn] == 0) {
+        phist[ev_vpn_hash][ev_pc_hash]++;
+    } else {
+        phist[ev_vpn_hash][ev_pc_hash] = 0;
+    }
+}
+
+void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = get_size() == llt_size;
@@ -157,13 +182,8 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    if (in_llt) {
       insert_pc[temp_vpn] = lastPC;
 
-      if (shadow_table_search(temp_vpn))
-      {
-          uint64_t max_hash = 1ULL << pc_bits; 
-          for (uint64_t pc_hash = 0; pc_hash < max_hash; pc_hash++)
-          {
-              phist[temp_hash_vpn][pc_hash] = 0;
-          }
+      if (shadow_table_search(temp_vpn)) {
+        flushing_vpn_column(temp_hash_vpn);
       }
 
       bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > bypass_thd; 
@@ -184,17 +204,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    ++m_alloc;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
    if (eviction && in_llt) {
-        IntPtr evict_vpn = evict_addr & page_bitmask; 
-        IntPtr evict_pc  = insert_pc[evict_vpn];
-
-        IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
-        IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
-
-        if (curHit[evict_vpn] == 0) {
-            phist[ev_vpn_hash][ev_pc_hash]++;
-        } else {
-            phist[ev_vpn_hash][ev_pc_hash] = 0;
-        }
+      updating_phist(evict_addr);
    }
 }
 

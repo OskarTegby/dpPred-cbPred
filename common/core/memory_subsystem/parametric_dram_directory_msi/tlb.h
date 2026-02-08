@@ -38,6 +38,9 @@ namespace ParametricDramDirectoryMSI
          void add_recent_pfn(IntPtr address);
          bool shadow_table_search(IntPtr vpn);
          void shadow_table_insert(IntPtr vpn);
+         void flushing_vpn_column(IntPtr temp_hash_vpn);
+         void updating_phist(IntPtr evict_addr);
+
          void allocate(IntPtr address, SubsecondTime now);
    };
 }
