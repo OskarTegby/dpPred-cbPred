@@ -159,9 +159,10 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 
       if (shadow_table_search(temp_vpn))
       {
-          for (uint64_t i = 0; i < 64; i++)
+          uint64_t max_hash = 1ULL << pc_bits; 
+          for (uint64_t pc_hash = 0; pc_hash < max_hash; pc_hash++)
           {
-              phist[temp_hash_vpn][i] = 0;
+              phist[temp_hash_vpn][pc_hash] = 0;
           }
       }
 
