@@ -18,6 +18,11 @@ uint64_t shadow_table_size = 2;
 uint64_t llt_size = 1024;
 uint64_t bypass_thd = 6;
 
+uint64_t pc_bits = 6;
+uint64_t vpn_bits = 4;
+uint64_t index_size = 32;
+uint64_t page_bitmask = 0xfffffffffffff000; 
+
 std::map<IntPtr, IntPtr> insert_pc;
 
 TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count)
@@ -50,15 +55,14 @@ void TLB::setL3Controller(CacheCntlr *last_level)
 }
 
 void 
-TLB::setDeadBit (IntPtr address){
+TLB::setDeadBit(IntPtr address){
   
-   m_cache.setPrDeadBit (address);
+   m_cache.setPrDeadBit(address);
 }
 
 bool
 TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mptr, bool allocate_on_miss)
 {
-   uint64_t page_bitmask = 0xfffffffffffff000; 
    IntPtr temp = address & page_bitmask;
    bool hit = m_cache.accessSingleLine(address, Cache::LOAD, NULL, 0, now, true);
    m_access++;
@@ -92,31 +96,31 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
 }
 
 IntPtr
-TLB::findHash (IntPtr ev_vpn, uint64_t bits)
+TLB::findHash(IntPtr index, uint64_t bits)
 {
-   IntPtr last_part = ev_vpn;
-   IntPtr lph = 0;
-   int max_iter = 32 / bits;
-   for (uint64_t i = 0; i < max_iter; ++i) {
-        lph ^= (last_part % (1 << bits));
-        last_part >>= bits;
+   IntPtr remaining = index;
+   IntPtr hash = 0;
+   int max_iter = index_size / bits;
+   for (int i = 0; i < max_iter; ++i) {
+        hash ^= (remaining % (1 << bits));
+        remaining >>= bits;
    }
-   return lph;
+   return hash;
 }
 
 void
-addRecentPFN(IntPtr addr) {
-	addr >>= 17;
+addRecentPFN(IntPtr address) {
+	address >>= 17;
 	if (recentPFN.size() < pfq_size) {
-		recentPFN.push_back(addr);
+		recentPFN.push_back(address);
 	} else {
 		recentPFN.pop_front();
-		recentPFN.push_back(addr);
+		recentPFN.push_back(address);
 	}
 }
 
 bool
-TLB::shadow_table_search (IntPtr vpn)
+TLB::shadow_table_search(IntPtr vpn)
 {
     for (uint64_t i = 0; i < shadow_table.size(); i++)
     {
@@ -129,7 +133,7 @@ TLB::shadow_table_search (IntPtr vpn)
 }
 
 void
-TLB::shadow_table_insert (IntPtr vpn)
+TLB::shadow_table_insert(IntPtr vpn)
 {
     if (shadow_table.size() == shadow_table_size)
     {
@@ -142,16 +146,15 @@ void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = get_size() == llt_size;
-   uint64_t page_bitmask = 0xfffffffffffff000; 
 
    IntPtr temp_vpn = address & page_bitmask;
-
-   if (in_llt)
-        insert_pc[temp_vpn] = lastPC;
-
-   IntPtr temp_hash_vpn = findHash(temp_vpn, 4);
-   IntPtr temp_hash_pc  = findHash(lastPC, 6);
+   IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
+   IntPtr temp_hash_pc  = findHash(lastPC, pc_bits);
    ++m_alloc;
+
+   if (in_llt) {
+        insert_pc[temp_vpn] = lastPC;
+   } 
 
    if (in_llt)
    {
@@ -184,8 +187,8 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    if (eviction && in_llt) {
         IntPtr evict_page = evict_addr & page_bitmask; 
 
-        IntPtr ev_vpn_hash = findHash(evict_page, 4);
-        IntPtr ev_pc_hash  = findHash(insert_pc[evict_page], 6);
+        IntPtr ev_vpn_hash = findHash(evict_page, vpn_bits);
+        IntPtr ev_pc_hash  = findHash(insert_pc[evict_page], pc_bits);
         if (!curHit[evict_page]) {
                 hitCounter[ev_vpn_hash][ev_pc_hash]++;
         } else {
