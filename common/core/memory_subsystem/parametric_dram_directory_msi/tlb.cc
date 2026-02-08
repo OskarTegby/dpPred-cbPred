@@ -166,14 +166,16 @@ TLB::allocate(IntPtr address, SubsecondTime now)
        }
    }
 
-   if (in_llt && hitCounter[temp_hash_vpn][temp_hash_pc] > bypass_thd) {
+   if (in_llt) {
+    if (hitCounter[temp_hash_vpn][temp_hash_pc] > bypass_thd) {
         ++m_bypass;
         shadow_table_insert(temp_vpn);
         addRecentPFN(temp_vpn);
         return;
-   } else if (in_llt) {
+   } else { 
         curHit[temp_vpn] = 0;
    }
+  }
 
    bool eviction;
    IntPtr evict_addr; 
