@@ -147,26 +147,26 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    if (in_llt)
         insert_pc[temp_vpn] = lastPC;
 
-   IntPtr temp_hash_vpn = findHash (temp_vpn, 4);
-   IntPtr temp_hash_pc =  findHash (lastPC, 6);
+   IntPtr temp_hash_vpn = findHash(temp_vpn, 4);
+   IntPtr temp_hash_pc  = findHash(lastPC, 6);
    ++m_alloc;
 
    if (in_llt)
    {
-       bool res = shadow_table_search (temp_vpn);
+       bool res = shadow_table_search(temp_vpn);
        if (res == true)
        {
-           for (int i = 0;i < 64;i++)
+           for (int i = 0; i < 64; i++)
            {
-               hitCounter[temp_hash_vpn][i]= 0;
+               hitCounter[temp_hash_vpn][i] = 0;
            }
        }
    }
 
    if (in_llt && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
         ++m_bypass;
-        shadow_table_insert (temp_vpn);
-	addRecentPFN(temp_vpn);
+        shadow_table_insert(temp_vpn);
+        addRecentPFN(temp_vpn);
         return;
    } else if (in_llt) {
         curHit[temp_vpn] = 0;
@@ -180,9 +180,9 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    if (eviction && in_llt) {
         IntPtr evict_page = evict_addr & page_bitmask; 
 
-        IntPtr ev_vpn_hash = findHash (evict_page, 4);
-        IntPtr ev_pc_hash = findHash ((insert_pc[evict_page]), 6);
-        if (!curHit[evict_page]){
+        IntPtr ev_vpn_hash = findHash(evict_page, 4);
+        IntPtr ev_pc_hash  = findHash(insert_pc[evict_page], 6);
+        if (!curHit[evict_page]) {
                 hitCounter[ev_vpn_hash][ev_pc_hash]++;
         } else {
                 hitCounter[ev_vpn_hash][ev_pc_hash] = 0;
