@@ -25,17 +25,17 @@ namespace ParametricDramDirectoryMSI
          UInt64 m_access, m_miss, m_alloc, m_bypass;
 	 UInt32 m_conf_counter = 2;
       public:
-         std::map<IntPtr, std::map<IntPtr, uint64_t> > hitCounter;
-	 std::map<IntPtr, uint64_t> curHit;
+         std::map<IntPtr, std::map<IntPtr, uint64_t>> hitCounter;
+         std::map<IntPtr, uint64_t> curHit;
          TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count = 2);
          bool lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager *mptr, bool allocate_on_miss = true);
          void allocate(IntPtr address, SubsecondTime now);
-	 void setDeadBit (IntPtr address);
+         void setDeadBit(IntPtr address);
          UInt32 give_size();
          void setL3Controller(CacheCntlr*);
-         void shadow_table_insert (IntPtr vpn);
-         bool shadow_table_search (IntPtr vpn);
-         IntPtr findHash (IntPtr ev_vpn, uint64_t bits);
+         void shadow_table_insert(IntPtr vpn);
+         bool shadow_table_search(IntPtr vpn);
+         IntPtr findHash(IntPtr ev_vpn, uint64_t bits);
    };
 }
 
