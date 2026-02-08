@@ -14,7 +14,7 @@
 #include "tlb.cc"
 #include <cstring>
 
-std::map<uint64_t, std::pair<uint64_t, uint64_t> > hitCounterLLC;
+std::map<uint64_t, std::pair<uint64_t, uint64_t> > bhist;
 std::map<uint64_t, uint64_t> curHitLLC;
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
@@ -872,7 +872,7 @@ CacheCntlr::accessLLCSw(IntPtr address)
         else if(curSize[setIndex] == 16)  
         {
 
-            if (recentPFNContains(tag) && hitCounterLLC[findHash(tag, 12)].second > 6)
+            if (recentPFNContains(tag) && bhist[findHash(tag, 12)].second > 6)
             {
                 llcBypass++;             // llcBypass tracks software LLC bypass count
                 return;                  // software LLC bypassing
@@ -885,15 +885,15 @@ CacheCntlr::accessLLCSw(IntPtr address)
             {
                 if(!curHitLLC[evict_tag])
                 {
-                    hitCounterLLC[findHash(evict_tag, 12)].second++;
-                    if (hitCounterLLC[findHash(evict_tag, 12)].second > 16)
+                    bhist[findHash(evict_tag, 12)].second++;
+                    if (bhist[findHash(evict_tag, 12)].second > 16)
                     {
-                        hitCounterLLC[findHash(evict_tag, 12)].second = 16;
+                        bhist[findHash(evict_tag, 12)].second = 16;
                     }
                 }
                 else
                 {
-                    hitCounterLLC[findHash(evict_tag, 12)].second = 0;
+                    bhist[findHash(evict_tag, 12)].second = 0;
                 }
             }                
  
