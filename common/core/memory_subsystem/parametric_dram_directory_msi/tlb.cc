@@ -6,15 +6,15 @@
 
 namespace ParametricDramDirectoryMSI
 {
+std::deque<IntPtr> pfq;
 
-std::deque<IntPtr> recentPFN;
+   std::map<IntPtr, std::map<IntPtr, uint64_t>> TLB::phist;
+   std::deque<IntPtr> TLB::shadow_table;
 
-IntPtr lastPC;
+   std::map<IntPtr, uint64_t> TLB::llt_hits;
+   std::map<IntPtr, IntPtr> TLB::pc_hist;
 
-std::deque<IntPtr> shadow_table;
-uint64_t shadow_table_size = 2;
-
-std::map<IntPtr, IntPtr> insert_pc;
+   IntPtr TLB::last_pc = 0;
 
 TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count)
    : m_size(num_entries)
@@ -35,7 +35,7 @@ TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UIn
    registerStatsMetric(name, core_id, "allocs", &m_alloc);
 }
 
-UInt32 TLB::give_size()
+UInt32 TLB::get_size()
 {
    return m_size;
 }
@@ -46,24 +46,24 @@ void TLB::setL3Controller(CacheCntlr *last_level)
 }
 
 void 
-TLB::setDeadBit (IntPtr address){
+TLB::setDeadBit(IntPtr address){
   
-   m_cache.setPrDeadBit (address);
+   m_cache.setPrDeadBit(address);
 }
 
 bool
 TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mptr, bool allocate_on_miss)
 {
-   IntPtr temp = address & 0xfffffffffffff000;
+   IntPtr temp = address & hw_page_bitmask;
    bool hit = m_cache.accessSingleLine(address, Cache::LOAD, NULL, 0, now, true);
    m_access++;
 
    if (isIfetch)
-       lastPC = address;
+       last_pc = address;
 
    if (hit) {
-       if (give_size() == 1024) {
-           curHit[temp]++;
+       if (get_size() == llt_size) {
+           llt_hits[temp]++;
        }
        return true;
    }
@@ -87,33 +87,31 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
 }
 
 IntPtr
-TLB::findHash (IntPtr ev_vpn, uint64_t bits)
-{
-   IntPtr last_part = ev_vpn;
-   IntPtr lph = 0;
-   int max_iter = 32 / bits;
+TLB::findHash(IntPtr index, uint64_t bits) {
+   IntPtr remaining = index;
+   IntPtr hash = 0;
+   int max_iter = index_size / bits;
    for (int i = 0; i < max_iter; ++i) {
-        lph ^= (last_part % (1 << bits));
-        last_part >>= bits;
+        hash ^= (remaining % (1 << bits));
+        remaining >>= bits;
    }
-   return lph;
+   return hash;
 }
 
 void
-addRecentPFN(IntPtr addr) {
-	addr >>= 17;
-	if (recentPFN.size() < 8) {
-		recentPFN.push_back(addr);
+TLB::add_recent_pfn(IntPtr address) {
+	address >>= sw_page_bitshift;
+	if (pfq.size() < pfq_size) {
+		pfq.push_back(address);
 	} else {
-		recentPFN.pop_front();
-		recentPFN.push_back(addr);
+		pfq.pop_front();
+		pfq.push_back(address);
 	}
 }
 
 bool
-TLB::shadow_table_search (IntPtr vpn)
+TLB::shadow_table_search(IntPtr vpn)
 {
-    bool res = false;
     for (uint64_t i = 0; i < shadow_table.size(); i++)
     {
         if (shadow_table[i] == vpn)
@@ -121,11 +119,11 @@ TLB::shadow_table_search (IntPtr vpn)
             return true;
         }
     }
-    return res;
+    return false;
 }
 
 void
-TLB::shadow_table_insert (IntPtr vpn)
+TLB::shadow_table_insert(IntPtr vpn)
 {
     if (shadow_table.size() == shadow_table_size)
     {
@@ -135,49 +133,65 @@ TLB::shadow_table_insert (IntPtr vpn)
 }
 
 void
+TLB::flushing_vpn_column(IntPtr temp_hash_vpn)
+{
+    uint64_t max_hash = 1ULL << pc_bits; 
+    for (uint64_t pc_hash = 0; pc_hash < max_hash; pc_hash++) {
+        phist[temp_hash_vpn][pc_hash] = 0;
+    }
+}
+
+void
+TLB::updating_phist(IntPtr evict_addr)
+{
+    IntPtr evict_vpn = evict_addr & hw_page_bitmask; 
+    IntPtr evict_pc  = pc_hist[evict_vpn];
+
+    IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
+    IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
+
+    if (llt_hits[evict_vpn] == 0) {
+        phist[ev_vpn_hash][ev_pc_hash]++;
+    } else {
+        phist[ev_vpn_hash][ev_pc_hash] = 0;
+    }
+}
+
+void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
-   if (give_size() == 1024)
-        insert_pc[(address & 0xfffffffffffff000)] = lastPC;
+   bool in_llt = get_size() == llt_size;
 
-   IntPtr temp_vpn = address & 0xfffffffffffff000;
-   IntPtr temp_hash_vpn = findHash ((address & 0xfffffffffffff000), 4);
-   IntPtr temp_hash_pc =  findHash (lastPC, 6);
-   ++m_alloc;
+   IntPtr temp_vpn = address & hw_page_bitmask;
+   IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
+   IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
 
-   if (give_size() == 1024)
-   {
-       bool res = shadow_table_search (temp_vpn);
-       if (res == true)
-       {
-           for (int i = 0;i < 64;i++)
-           {
-               hitCounter[temp_hash_vpn][i]= 0;
-           }
-       }
-   }
+   if (in_llt) {
+      pc_hist[temp_vpn] = last_pc;
 
-   if (give_size() == 1024 && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
-        ++m_bypass;
-        shadow_table_insert (temp_vpn);
-	addRecentPFN(address & 0xfffffffffffff000);
-        return;
-   } else if (give_size() == 1024) {
-        curHit[(address & 0xfffffffffffff000)] = 0;
-   }
+      if (shadow_table_search(temp_vpn)) {
+        flushing_vpn_column(temp_hash_vpn);
+      }
+
+      bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > phist_thd; 
+      if (sat_thd) {
+          ++m_bypass;
+          shadow_table_insert(temp_vpn);
+          add_recent_pfn(temp_vpn);
+          return;
+      } else { 
+          llt_hits[temp_vpn] = 0;
+      }
+  }
+
    bool eviction;
-   IntPtr evict_addr;
+   IntPtr evict_addr; 
    CacheBlockInfo evict_block_info;
-   m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && give_size() == 1024) {
 
-        IntPtr ev_vpn_hash = findHash ((evict_addr & 0xfffffffffffff000), 4);
-        IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & 0xfffffffffffff000)]), 6);
-        if (!curHit[(evict_addr & 0xfffffffffffff000)]){
-                hitCounter[ev_vpn_hash][ev_pc_hash]++;
-        } else {
-                hitCounter[ev_vpn_hash][ev_pc_hash] = 0;
-        }
+   ++m_alloc;
+   m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
+   if (eviction && in_llt) {
+      updating_phist(evict_addr);
    }
 }
 

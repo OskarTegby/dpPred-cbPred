@@ -216,6 +216,21 @@ namespace ParametricDramDirectoryMSI
          bool m_prefetch_on_prefetch_hit;
          bool m_l1_mshr;
 
+         static std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
+         static std::map<uint64_t, uint64_t> llc_hits;
+
+         static const uint64_t LLC_SETS = 2048;
+         static const uint64_t LLC_ASSOCIATIVITY = 16;
+         static const uint64_t MAX_COUNTER_VAL = 16;
+ 
+         static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
+         static uint64_t alloc_blocks[LLC_SETS];
+ 
+         uint64_t bhist_thd = 6;
+         uint64_t block_bits = 12;
+         uint64_t index_size = 32;
+         uint64_t sw_page_bitshift = 17;
+ 
          struct {
            UInt64 loads, stores;
            UInt64 load_misses, store_misses;
@@ -406,17 +421,30 @@ namespace ParametricDramDirectoryMSI
          void enable() { m_master->m_cache->enable(); }
          void disable() { m_master->m_cache->disable(); }
 
+         void capCounters(IntPtr block_hash);
+         IntPtr findHash(IntPtr index, uint64_t bits);
+         void updateCounters(uint64_t evict_tag);
+         bool shouldBypassLLC(uint64_t tag);
+         void handleFullSetMiss(uint64_t tag, uint64_t set);
+
+         bool recentPFNContains(IntPtr tag);
+         void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set);
+         void insertIntoPartialSet(uint64_t tag, uint64_t set);
+  
+         void handleLLCMiss(uint64_t tag, uint64_t set);
+         void handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set);
+
+         int findTagInSet(uint64_t set, uint64_t tag);
+
          uint64_t getTagSw(IntPtr address);
-         uint64_t getSetIndexSw(IntPtr address);
-         void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
+         uint64_t getSetSw(IntPtr address);
+
          void accessLLCSw(IntPtr address);
 
          uint64_t getTagSwdef(IntPtr address);
-         uint64_t getSetIndexSwdef(IntPtr address);
-         void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
+         uint64_t getSetSwdef(IntPtr address);
+         void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t set);
          void accessLLCSwdef(IntPtr address);
-         bool recentPFNContains(IntPtr tag);
-	 IntPtr findHash(IntPtr, uint64_t);
 
          friend class CacheCntlrList;
          friend class MemoryManager;
