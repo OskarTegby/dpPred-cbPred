@@ -415,6 +415,7 @@ namespace ParametricDramDirectoryMSI
          void handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set);
          void handleFullSetMiss(uint64_t tag, uint64_t set);
          void insertIntoPartialSet(uint64_t tag, uint64_t set);
+         bool shouldBypassLLC(uint64_t tag);
          void handleLLCMiss(uint64_t tag, uint64_t set);
          void accessLLCSw(IntPtr address);
 
