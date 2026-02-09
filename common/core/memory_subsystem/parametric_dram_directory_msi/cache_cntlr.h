@@ -408,15 +408,15 @@ namespace ParametricDramDirectoryMSI
 
          IntPtr findHash(IntPtr index, uint64_t bits);
          uint64_t getTagSw(IntPtr address);
-         uint64_t getSetIndexSw(IntPtr address);
+         uint64_t getSetSw(IntPtr address);
          bool recentPFNContains(IntPtr tag);
-         void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
-         int findTagInSet(uint64_t setIndex, uint64_t tag);
+         void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set);
+         int findTagInSet(uint64_t set, uint64_t tag);
          void accessLLCSw(IntPtr address);
 
          uint64_t getTagSwdef(IntPtr address);
-         uint64_t getSetIndexSwdef(IntPtr address);
-         void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
+         uint64_t getSetSwdef(IntPtr address);
+         void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t set);
          void accessLLCSwdef(IntPtr address);
 
          friend class CacheCntlrList;
