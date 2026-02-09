@@ -805,7 +805,7 @@ CacheCntlr::getTagSw(IntPtr address) {
 }
 
 uint64_t
-CacheCntlr::getSetIndexSw(IntPtr address) {
+CacheCntlr::getSetSw(IntPtr address) {
     IntPtr throwOffset = (address >> 6);
     return (throwOffset % 2048);
 }
@@ -816,13 +816,13 @@ CacheCntlr::recentPFNContains(IntPtr tag) {
 }
 
 void
-CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex) {
+CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set) {
     for(int i = pivotIndex; i >= 1 ; i--) {
-        llc[setIndex][i] = llc[setIndex][i - 1];
+        llc[set][i] = llc[set][i - 1];
     }
    
     // llc insertion takes place here
-    llc[setIndex][0] = latestTag;
+    llc[set][0] = latestTag;
 
     if (recentPFNContains(latestTag)) {
         curHitLLC[latestTag] = 0;
@@ -830,10 +830,10 @@ CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setInd
 }
 
 int
-CacheCntlr::findTagInSet(uint64_t setIndex, uint64_t tag)
+CacheCntlr::findTagInSet(uint64_t set, uint64_t tag)
 {
-    for(uint64_t i = 0; i < curSize[setIndex]; i++) {
-        if (llc[setIndex][i] == tag) {     // software LLC hit
+    for(uint64_t i = 0; i < curSize[set]; i++) {
+        if (llc[set][i] == tag) {     // software LLC hit
             if (curHitLLC.count(tag)) {
                 curHitLLC[tag]++;
             }
@@ -848,26 +848,26 @@ void
 CacheCntlr::accessLLCSw(IntPtr address) {
     llcAcc++;  // llcAcc tracks software LLC accesses
 
-    uint64_t setIndex = getSetIndexSw(address);
+    uint64_t set = getSetSw(address);
     uint64_t tag = getTagSw(address);
  
-    int pivotIndex = findTagInSet(setIndex, tag);
+    int pivotIndex = findTagInSet(set, tag);
     bool isMiss = (pivotIndex == -1);
 
     if (isMiss) {
         llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
-        if(curSize[setIndex] < 16) {
-            pivotIndex = curSize[setIndex];
-            curSize[setIndex]++;
-        } else if(curSize[setIndex] == 16) {
+        if(curSize[set] < 16) {
+            pivotIndex = curSize[set];
+            curSize[set]++;
+        } else if(curSize[set] == 16) {
             if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd) {
                 llcBypass++;             // llcBypass tracks software LLC bypass count
                 return;                  // software LLC bypassing
             }
 
            // Now eviction will surely occur
-            uint64_t evict_tag = llc[setIndex][15];
+            uint64_t evict_tag = llc[set][15];
             if (curHitLLC.count(evict_tag)) {
                 if(curHitLLC[evict_tag] == 0) {
                     bhist[findHash(evict_tag, block_bits)].second++;
@@ -884,7 +884,7 @@ CacheCntlr::accessLLCSw(IntPtr address) {
         }
     }
 
-    updateLLCSw(tag, pivotIndex, setIndex);
+    updateLLCSw(tag, pivotIndex, set);
 }
 
 /*****************************************************************************
