@@ -858,10 +858,16 @@ CacheCntlr::insertIntoPartialSet(uint64_t tag, uint64_t set)
     updateLLCSw(tag, insert_pos, set);
 }
 
+bool
+CacheCntlr::shouldBypassLLC(uint64_t tag) {
+    return recentPFNContains(tag) && 
+           bhist[findHash(tag, block_bits)].second > bypass_thd;
+}
+
 void
 CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
 {
-    if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd) {
+    if (shouldBypassLLC(tag)) {
         llcBypass++;             // llcBypass tracks software LLC bypass count
         return;                  // software LLC bypassing
     }
