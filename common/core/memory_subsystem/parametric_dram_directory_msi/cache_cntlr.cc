@@ -845,6 +845,11 @@ CacheCntlr::findTagInSet(uint64_t set, uint64_t tag)
  }
 
 void
+CacheCntlr::handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set) {
+    updateLLCSw(tag, pivotIndex, set);
+}
+
+void
 CacheCntlr::accessLLCSw(IntPtr address) {
     llcAcc++;  // llcAcc tracks software LLC accesses
 
@@ -852,9 +857,11 @@ CacheCntlr::accessLLCSw(IntPtr address) {
     uint64_t tag = getTagSw(address);
  
     int pivotIndex = findTagInSet(set, tag);
-    bool isMiss = (pivotIndex == -1);
+    bool is_hit = (pivotIndex != -1);
 
-    if (isMiss) {
+    if (is_hit) {
+        handleLLCHit(tag, pivotIndex, set);
+    } else {
         llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
         if(curSize[set] < 16) {
@@ -882,9 +889,9 @@ CacheCntlr::accessLLCSw(IntPtr address) {
  
             pivotIndex = 16;
         }
-    }
 
-    updateLLCSw(tag, pivotIndex, set);
+        updateLLCSw(tag, pivotIndex, set);
+    }
 }
 
 /*****************************************************************************
