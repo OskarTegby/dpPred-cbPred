@@ -22,9 +22,8 @@ uint64_t pc_bits = 6;
 uint64_t vpn_bits = 4;
 uint64_t index_size = 32;
 
-//TODO: Why isn't the bit-shift 12?
-uint64_t page_bitmask = 0xfffffffffffff000;
-uint64_t page_bitshift = 17;
+uint64_t hw_page_bitmask = 0xfffffffffffff000;    // 4kB  pages
+uint64_t sw_page_bitshift = 17;                   // 12kB pages
 
 std::map<IntPtr, IntPtr> insert_pc;
 
@@ -66,7 +65,7 @@ TLB::setDeadBit(IntPtr address){
 bool
 TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mptr, bool allocate_on_miss)
 {
-   IntPtr temp = address & page_bitmask;
+   IntPtr temp = address & hw_page_bitmask;
    bool hit = m_cache.accessSingleLine(address, Cache::LOAD, NULL, 0, now, true);
    m_access++;
 
@@ -112,7 +111,7 @@ TLB::findHash(IntPtr index, uint64_t bits) {
 
 void
 TLB::add_recent_pfn(IntPtr address) {
-	address >>= page_bitshift;
+	address >>= sw_page_bitshift;
 	if (recent_pfn.size() < pfq_size) {
 		recent_pfn.push_back(address);
 	} else {
@@ -156,7 +155,7 @@ TLB::flushing_vpn_column(IntPtr temp_hash_vpn)
 void
 TLB::updating_phist(IntPtr evict_addr)
 {
-    IntPtr evict_vpn = evict_addr & page_bitmask; 
+    IntPtr evict_vpn = evict_addr & hw_page_bitmask; 
     IntPtr evict_pc  = insert_pc[evict_vpn];
 
     IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
@@ -174,7 +173,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = get_size() == llt_size;
 
-   IntPtr temp_vpn = address & page_bitmask;
+   IntPtr temp_vpn = address & hw_page_bitmask;
    IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
    IntPtr temp_hash_pc  = findHash(lastPC, pc_bits);
 
