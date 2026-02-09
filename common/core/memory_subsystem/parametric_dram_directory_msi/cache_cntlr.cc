@@ -829,30 +829,31 @@ CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setInd
     }
 }
 
+int
+CacheCntlr::findTagInSet(uint64_t setIndex, uint64_t tag)
+{
+    for(uint64_t i = 0; i < curSize[setIndex]; i++) {
+        if (llc[setIndex][i] == tag) {     // software LLC hit
+            if (curHitLLC.count(tag)) {
+                curHitLLC[tag]++;
+            }
+            
+            return i;
+        }
+    }
+    return -1;
+ }
+
 void
 CacheCntlr::accessLLCSw(IntPtr address) {
     llcAcc++;  // llcAcc tracks software LLC accesses
 
-    bool isMiss = true;
-
-    uint64_t pivotIndex = 0;
-
     uint64_t setIndex = getSetIndexSw(address);
     uint64_t tag = getTagSw(address);
  
-    for(uint64_t i = 0; i < curSize[setIndex]; i++) {
-        if(llc[setIndex][i] == tag) {     // software LLC hit
-            isMiss = false;
-            pivotIndex = i;
-            
-            if(curHitLLC.count(tag)) {
-                curHitLLC[tag]++;
-            }
+    int pivotIndex = findTagInSet(setIndex, tag);
+    bool isMiss = (pivotIndex == -1);
 
-            break;
-        }
-    }
-    
     if (isMiss) {
         llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
