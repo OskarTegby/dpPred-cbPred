@@ -411,6 +411,7 @@ namespace ParametricDramDirectoryMSI
          uint64_t getSetIndexSw(IntPtr address);
          bool recentPFNContains(IntPtr tag);
          void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
+         int findTagInSet(uint64_t setIndex, uint64_t tag);
          void accessLLCSw(IntPtr address);
 
          uint64_t getTagSwdef(IntPtr address);
