@@ -851,37 +851,47 @@ CacheCntlr::handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set) {
 }
 
 void
+CacheCntlr::insertIntoPartialSet(uint64_t tag, uint64_t set)
+{
+    uint64_t insert_pos = curSize[set];
+    curSize[set]++;
+    updateLLCSw(tag, insert_pos, set);
+}
+
+void
+CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
+{
+    if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd) {
+        llcBypass++;             // llcBypass tracks software LLC bypass count
+        return;                  // software LLC bypassing
+    }
+
+    // Now eviction will surely occur
+    uint64_t evict_tag = llc[set][LLC_ASSOCIATIVITY - 1];
+    if (curHitLLC.count(evict_tag)) {
+        if (curHitLLC[evict_tag] == 0) {
+            bhist[findHash(evict_tag, block_bits)].second++;
+            if (bhist[findHash(evict_tag, block_bits)].second > 16)
+            {
+                bhist[findHash(evict_tag, block_bits)].second = 16;
+            }
+        } else {
+            bhist[findHash(evict_tag, block_bits)].second = 0;
+        }
+    }
+
+    updateLLCSw(tag, LLC_ASSOCIATIVITY, set);
+}
+
+void
 CacheCntlr::handleLLCMiss(uint64_t tag, uint64_t set) {
     llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
-    uint64_t pivotIndex = 0;
     if (curSize[set] < LLC_ASSOCIATIVITY) {
-        pivotIndex = curSize[set];
-        curSize[set]++;
+        insertIntoPartialSet(tag, set);
     } else if (curSize[set] == LLC_ASSOCIATIVITY) {
-        if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd) {
-            llcBypass++;             // llcBypass tracks software LLC bypass count
-            return;                  // software LLC bypassing
-        }
-
-       // Now eviction will surely occur
-        uint64_t evict_tag = llc[set][LLC_ASSOCIATIVITY - 1];
-        if (curHitLLC.count(evict_tag)) {
-            if(curHitLLC[evict_tag] == 0) {
-                bhist[findHash(evict_tag, block_bits)].second++;
-                if (bhist[findHash(evict_tag, block_bits)].second > 16)
-                {
-                    bhist[findHash(evict_tag, block_bits)].second = 16;
-                }
-            } else {
-                bhist[findHash(evict_tag, block_bits)].second = 0;
-            }
-        }
-
-        pivotIndex = 16;
+        handleFullSetMiss(tag, set);
     }
-
-    updateLLCSw(tag, pivotIndex, set);
 }
 
 void
