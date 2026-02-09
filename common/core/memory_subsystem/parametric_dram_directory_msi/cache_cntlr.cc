@@ -23,6 +23,7 @@ uint64_t block_bits = 12;
 uint64_t index_size = 32;
 
 uint64_t page_bitshift = 17;
+uint64_t LLC_ASSOCIATIVITY = 16;
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
@@ -854,17 +855,17 @@ CacheCntlr::handleLLCMiss(uint64_t tag, uint64_t set) {
     llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
     uint64_t pivotIndex = 0;
-    if(curSize[set] < 16) {
+    if (curSize[set] < LLC_ASSOCIATIVITY) {
         pivotIndex = curSize[set];
         curSize[set]++;
-    } else if (curSize[set] == 16) {
+    } else if (curSize[set] == LLC_ASSOCIATIVITY) {
         if (recentPFNContains(tag) && bhist[findHash(tag, block_bits)].second > bypass_thd) {
             llcBypass++;             // llcBypass tracks software LLC bypass count
             return;                  // software LLC bypassing
         }
 
        // Now eviction will surely occur
-        uint64_t evict_tag = llc[set][15];
+        uint64_t evict_tag = llc[set][LLC_ASSOCIATIVITY - 1];
         if (curHitLLC.count(evict_tag)) {
             if(curHitLLC[evict_tag] == 0) {
                 bhist[findHash(evict_tag, block_bits)].second++;
