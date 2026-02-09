@@ -406,8 +406,10 @@ namespace ParametricDramDirectoryMSI
          void enable() { m_master->m_cache->enable(); }
          void disable() { m_master->m_cache->disable(); }
 
+         IntPtr findHash(IntPtr index, uint64_t bits);
          uint64_t getTagSw(IntPtr address);
          uint64_t getSetIndexSw(IntPtr address);
+         bool recentPFNContains(IntPtr tag);
          void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
          void accessLLCSw(IntPtr address);
 
@@ -415,8 +417,6 @@ namespace ParametricDramDirectoryMSI
          uint64_t getSetIndexSwdef(IntPtr address);
          void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t setIndex);
          void accessLLCSwdef(IntPtr address);
-         bool recentPFNContains(IntPtr tag);
-         IntPtr findHash(IntPtr index, uint64_t bits);
 
          friend class CacheCntlrList;
          friend class MemoryManager;
