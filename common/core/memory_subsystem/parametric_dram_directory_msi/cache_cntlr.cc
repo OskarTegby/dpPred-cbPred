@@ -41,7 +41,7 @@ Lock iolock;
 namespace ParametricDramDirectoryMSI
 {
    std::map<uint64_t, std::pair<uint64_t, uint64_t>> CacheCntlr::bhist;
-   std::map<uint64_t, uint64_t> CacheCntlr::curHitLLC;
+   std::map<uint64_t, uint64_t> CacheCntlr::llc_hits;
  
    uint64_t CacheCntlr::llc[2048][16] = {};
    uint64_t CacheCntlr::curSize[2048] = {};
@@ -801,12 +801,12 @@ CacheCntlr::findHash(IntPtr index, uint64_t bits) {
 void
 CacheCntlr::updateCounters(uint64_t evict_tag)
 {
-    if (curHitLLC.count(evict_tag) == 0) {
+    if (llc_hits.count(evict_tag) == 0) {
         return;
     }
 
     IntPtr block_hash = findHash(evict_tag, block_bits);
-    if (curHitLLC[evict_tag] == 0) {
+    if (llc_hits[evict_tag] == 0) {
         bhist[block_hash].second++;
         capCounters(block_hash);
     } else {
@@ -850,7 +850,7 @@ CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set) {
     llc[set][0] = latestTag;
 
     if (recentPFNContains(latestTag)) {
-        curHitLLC[latestTag] = 0;
+        llc_hits[latestTag] = 0;
     }
 }
 
@@ -883,8 +883,8 @@ CacheCntlr::findTagInSet(uint64_t set, uint64_t tag)
 {
     for(uint64_t i = 0; i < curSize[set]; i++) {
         if (llc[set][i] == tag) {     // software LLC hit
-            if (curHitLLC.count(tag)) {
-                curHitLLC[tag]++;
+            if (llc_hits.count(tag)) {
+                llc_hits[tag]++;
             }
             
             return i;
