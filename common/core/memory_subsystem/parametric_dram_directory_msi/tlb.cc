@@ -16,7 +16,7 @@ std::deque<IntPtr> shadow_table;
 uint64_t shadow_table_size = 2;
 
 uint64_t llt_size = 1024;
-uint64_t bypass_thd = 6;
+uint64_t phist_thd = 6;
 
 uint64_t pc_bits = 6;
 uint64_t vpn_bits = 4;
@@ -184,7 +184,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
         flushing_vpn_column(temp_hash_vpn);
       }
 
-      bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > bypass_thd; 
+      bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > phist_thd; 
       if (sat_thd) {
           ++m_bypass;
           shadow_table_insert(temp_vpn);

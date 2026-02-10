@@ -17,7 +17,7 @@
 std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
 std::map<uint64_t, uint64_t> curHitLLC;
 
-uint64_t bypass_thd = 6;
+uint64_t bhist_thd = 6;
 
 uint64_t block_bits = 12;
 uint64_t index_size = 32;
@@ -829,7 +829,7 @@ CacheCntlr::updateCounters(uint64_t evict_tag)
 bool
 CacheCntlr::shouldBypassLLC(uint64_t tag) {
     return recentPFNContains(tag) && 
-           bhist[findHash(tag, block_bits)].second > bypass_thd;
+           bhist[findHash(tag, block_bits)].second > bhist_thd;
 }
 
 void
