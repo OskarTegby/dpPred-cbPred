@@ -406,21 +406,24 @@ namespace ParametricDramDirectoryMSI
          void enable() { m_master->m_cache->enable(); }
          void disable() { m_master->m_cache->disable(); }
 
+         void capCounters(IntPtr block_hash);
          IntPtr findHash(IntPtr index, uint64_t bits);
-         uint64_t getTagSw(IntPtr address);
-         uint64_t getSetSw(IntPtr address);
+         void updateCounters(uint64_t evict_tag);
+         bool shouldBypassLLC(uint64_t tag);
+         void handleFullSetMiss(uint64_t tag, uint64_t set);
+
          bool recentPFNContains(IntPtr tag);
          void updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set);
-
-         int findTagInSet(uint64_t set, uint64_t tag);
-         void handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set);
-         void handleFullSetMiss(uint64_t tag, uint64_t set);
          void insertIntoPartialSet(uint64_t tag, uint64_t set);
-         bool shouldBypassLLC(uint64_t tag);
-         void capCounters(IntPtr block_hash);
-         void updateCounters(uint64_t evict_tag);
   
          void handleLLCMiss(uint64_t tag, uint64_t set);
+         void handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set);
+
+         int findTagInSet(uint64_t set, uint64_t tag);
+
+         uint64_t getTagSw(IntPtr address);
+         uint64_t getSetSw(IntPtr address);
+
          void accessLLCSw(IntPtr address);
 
          uint64_t getTagSwdef(IntPtr address);
