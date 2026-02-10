@@ -24,6 +24,7 @@ uint64_t index_size = 32;
 
 uint64_t page_bitshift = 17;
 
+static const uint64_t LLC_SETS = 2048;
 static const uint64_t LLC_ASSOCIATIVITY = 16;
 static const uint64_t MAX_COUNTER_VAL = 16;
 
@@ -31,9 +32,8 @@ static const uint64_t MAX_COUNTER_VAL = 16;
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
 // LLC Data Structure
-
-uint64_t llc[2048][16];
-uint64_t curSize[2048];
+uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
+uint64_t curSize[LLC_SETS];
 
 extern std::deque<IntPtr> recent_pfn;
 // Define to allow private L2 caches not to take the stack lock.
