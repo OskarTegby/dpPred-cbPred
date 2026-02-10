@@ -34,7 +34,7 @@ uint64_t curSize[LLC_SETS];
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
-extern std::deque<IntPtr> recent_pfn;
+extern std::deque<IntPtr> pfq;
 // Define to allow private L2 caches not to take the stack lock.
 // Works in most cases, but seems to have some more bugs or race conditions, preventing it from being ready for prime time.
 //#define PRIVATE_L2_OPTIMIZATION
@@ -849,7 +849,7 @@ CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
 
 bool
 CacheCntlr::recentPFNContains(IntPtr tag) {
-    return std::find(recent_pfn.begin(), recent_pfn.end(), tag) != recent_pfn.end();
+    return std::find(pfq.begin(), pfq.end(), tag) != pfq.end();
 }
 
 void
