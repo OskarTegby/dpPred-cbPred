@@ -11,7 +11,7 @@ std::deque<IntPtr> pfq;
    std::map<IntPtr, std::map<IntPtr, uint64_t>> TLB::phist;
    std::deque<IntPtr> TLB::shadow_table;
 
-   std::map<IntPtr, uint64_t> TLB::curHit;
+   std::map<IntPtr, uint64_t> TLB::llt_hits;
    std::map<IntPtr, IntPtr> TLB::pc_hist;
 
    IntPtr TLB::last_pc = 0;
@@ -63,7 +63,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
 
    if (hit) {
        if (get_size() == llt_size) {
-           curHit[temp]++;
+           llt_hits[temp]++;
        }
        return true;
    }
@@ -150,7 +150,7 @@ TLB::updating_phist(IntPtr evict_addr)
     IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
     IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
 
-    if (curHit[evict_vpn] == 0) {
+    if (llt_hits[evict_vpn] == 0) {
         phist[ev_vpn_hash][ev_pc_hash]++;
     } else {
         phist[ev_vpn_hash][ev_pc_hash] = 0;
@@ -180,7 +180,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
           add_recent_pfn(temp_vpn);
           return;
       } else { 
-          curHit[temp_vpn] = 0;
+          llt_hits[temp_vpn] = 0;
       }
   }
 

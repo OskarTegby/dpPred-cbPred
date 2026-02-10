@@ -217,7 +217,7 @@ namespace ParametricDramDirectoryMSI
          bool m_l1_mshr;
 
          static std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
-         static std::map<uint64_t, uint64_t> curHitLLC;
+         static std::map<uint64_t, uint64_t> llc_hits;
 
          static const uint64_t LLC_SETS = 2048;
          static const uint64_t LLC_ASSOCIATIVITY = 16;
