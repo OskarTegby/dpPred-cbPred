@@ -44,7 +44,7 @@ namespace ParametricDramDirectoryMSI
    std::map<uint64_t, uint64_t> CacheCntlr::llc_hits;
  
    uint64_t CacheCntlr::llc[2048][16] = {};
-   uint64_t CacheCntlr::curSize[2048] = {};
+   uint64_t CacheCntlr::alloc_blocks[2048] = {};
 
 char CStateString(CacheState::cstate_t cstate) {
    switch(cstate)
@@ -857,8 +857,8 @@ CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set) {
 void
 CacheCntlr::insertIntoPartialSet(uint64_t tag, uint64_t set)
 {
-    uint64_t insert_pos = curSize[set];
-    curSize[set]++;
+    uint64_t insert_pos = alloc_blocks[set];
+    alloc_blocks[set]++;
     updateLLCSw(tag, insert_pos, set);
 }
 
@@ -866,9 +866,9 @@ void
 CacheCntlr::handleLLCMiss(uint64_t tag, uint64_t set) {
     llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
-    if (curSize[set] < LLC_ASSOCIATIVITY) {
+    if (alloc_blocks[set] < LLC_ASSOCIATIVITY) {
         insertIntoPartialSet(tag, set);
-    } else if (curSize[set] == LLC_ASSOCIATIVITY) {
+    } else if (alloc_blocks[set] == LLC_ASSOCIATIVITY) {
         handleFullSetMiss(tag, set);
     }
 }
@@ -881,7 +881,7 @@ CacheCntlr::handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set) {
 int
 CacheCntlr::findTagInSet(uint64_t set, uint64_t tag)
 {
-    for(uint64_t i = 0; i < curSize[set]; i++) {
+    for(uint64_t i = 0; i < alloc_blocks[set]; i++) {
         if (llc[set][i] == tag) {     // software LLC hit
             if (llc_hits.count(tag)) {
                 llc_hits[tag]++;
