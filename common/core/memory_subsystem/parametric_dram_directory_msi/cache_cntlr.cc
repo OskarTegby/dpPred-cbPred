@@ -23,7 +23,10 @@ uint64_t block_bits = 12;
 uint64_t index_size = 32;
 
 uint64_t page_bitshift = 17;
-uint64_t LLC_ASSOCIATIVITY = 16;
+
+static const uint64_t LLC_ASSOCIATIVITY = 16;
+static const uint64_t MAX_COUNTER_VAL = 16;
+
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
@@ -865,6 +868,30 @@ CacheCntlr::shouldBypassLLC(uint64_t tag) {
 }
 
 void
+CacheCntlr::capCounters(IntPtr block_hash)
+{
+    if (bhist[block_hash].second > MAX_COUNTER_VAL) {
+        bhist[block_hash].second = MAX_COUNTER_VAL;
+    }
+}
+
+void
+CacheCntlr::updateCounters(uint64_t evict_tag)
+{
+    if (curHitLLC.count(evict_tag) == 0) {
+        return;
+    }
+
+    IntPtr block_hash = findHash(evict_tag, block_bits);
+    if (curHitLLC[evict_tag] == 0) {
+        bhist[block_hash].second++;
+        capCounters(block_hash);
+    } else {
+        bhist[block_hash].second = 0;
+    }
+}
+
+void
 CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
 {
     if (shouldBypassLLC(tag)) {
@@ -874,17 +901,7 @@ CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
 
     // Now eviction will surely occur
     uint64_t evict_tag = llc[set][LLC_ASSOCIATIVITY - 1];
-    if (curHitLLC.count(evict_tag)) {
-        if (curHitLLC[evict_tag] == 0) {
-            bhist[findHash(evict_tag, block_bits)].second++;
-            if (bhist[findHash(evict_tag, block_bits)].second > 16)
-            {
-                bhist[findHash(evict_tag, block_bits)].second = 16;
-            }
-        } else {
-            bhist[findHash(evict_tag, block_bits)].second = 0;
-        }
-    }
+    updateCounters(evict_tag);
 
     updateLLCSw(tag, LLC_ASSOCIATIVITY, set);
 }
