@@ -29,9 +29,9 @@ namespace ParametricDramDirectoryMSI
          static std::deque<IntPtr> shadow_table;
 
          static std::map<IntPtr, uint64_t> curHit;
-         static std::map<IntPtr, IntPtr> insert_pc;
+         static std::map<IntPtr, IntPtr> pc_hist;
 
-         static IntPtr lastPC;
+         static IntPtr last_pc;
 
          uint64_t llt_size = 1024;
          uint64_t phist_thd = 6;

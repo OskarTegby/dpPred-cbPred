@@ -6,15 +6,15 @@
 
 namespace ParametricDramDirectoryMSI
 {
-std::deque<IntPtr> recent_pfn;
+std::deque<IntPtr> pfq;
 
    std::map<IntPtr, std::map<IntPtr, uint64_t>> TLB::phist;
    std::deque<IntPtr> TLB::shadow_table;
 
    std::map<IntPtr, uint64_t> TLB::curHit;
-   std::map<IntPtr, IntPtr> TLB::insert_pc;
+   std::map<IntPtr, IntPtr> TLB::pc_hist;
 
-   IntPtr TLB::lastPC = 0;
+   IntPtr TLB::last_pc = 0;
 
 TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count)
    : m_size(num_entries)
@@ -59,7 +59,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
    m_access++;
 
    if (isIfetch)
-       lastPC = address;
+       last_pc = address;
 
    if (hit) {
        if (get_size() == llt_size) {
@@ -101,11 +101,11 @@ TLB::findHash(IntPtr index, uint64_t bits) {
 void
 TLB::add_recent_pfn(IntPtr address) {
 	address >>= sw_page_bitshift;
-	if (recent_pfn.size() < pfq_size) {
-		recent_pfn.push_back(address);
+	if (pfq.size() < pfq_size) {
+		pfq.push_back(address);
 	} else {
-		recent_pfn.pop_front();
-		recent_pfn.push_back(address);
+		pfq.pop_front();
+		pfq.push_back(address);
 	}
 }
 
@@ -145,7 +145,7 @@ void
 TLB::updating_phist(IntPtr evict_addr)
 {
     IntPtr evict_vpn = evict_addr & hw_page_bitmask; 
-    IntPtr evict_pc  = insert_pc[evict_vpn];
+    IntPtr evict_pc  = pc_hist[evict_vpn];
 
     IntPtr ev_vpn_hash = findHash(evict_vpn, vpn_bits);
     IntPtr ev_pc_hash  = findHash(evict_pc, pc_bits);
@@ -164,10 +164,10 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 
    IntPtr temp_vpn = address & hw_page_bitmask;
    IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
-   IntPtr temp_hash_pc  = findHash(lastPC, pc_bits);
+   IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
 
    if (in_llt) {
-      insert_pc[temp_vpn] = lastPC;
+      pc_hist[temp_vpn] = last_pc;
 
       if (shadow_table_search(temp_vpn)) {
         flushing_vpn_column(temp_hash_vpn);
