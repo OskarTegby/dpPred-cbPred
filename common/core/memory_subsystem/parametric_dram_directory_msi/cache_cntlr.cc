@@ -14,27 +14,10 @@
 #include "tlb.cc"
 #include <cstring>
 
-std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
-std::map<uint64_t, uint64_t> curHitLLC;
-
-uint64_t bhist_thd = 6;
-
-uint64_t block_bits = 12;
-uint64_t index_size = 32;
-
-uint64_t sw_page_bitshift = 17;
-
-static const uint64_t LLC_SETS = 2048;
-static const uint64_t LLC_ASSOCIATIVITY = 16;
-static const uint64_t MAX_COUNTER_VAL = 16;
-
-// LLC Data Structure
-uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
-uint64_t curSize[LLC_SETS];
-
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
 extern std::deque<IntPtr> pfq;
+
 // Define to allow private L2 caches not to take the stack lock.
 // Works in most cases, but seems to have some more bugs or race conditions, preventing it from being ready for prime time.
 //#define PRIVATE_L2_OPTIMIZATION
@@ -57,6 +40,11 @@ Lock iolock;
 
 namespace ParametricDramDirectoryMSI
 {
+   std::map<uint64_t, std::pair<uint64_t, uint64_t>> CacheCntlr::bhist;
+   std::map<uint64_t, uint64_t> CacheCntlr::curHitLLC;
+ 
+   uint64_t CacheCntlr::llc[2048][16] = {};
+   uint64_t CacheCntlr::curSize[2048] = {};
 
 char CStateString(CacheState::cstate_t cstate) {
    switch(cstate)

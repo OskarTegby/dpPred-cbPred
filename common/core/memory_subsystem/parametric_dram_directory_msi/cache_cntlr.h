@@ -216,6 +216,21 @@ namespace ParametricDramDirectoryMSI
          bool m_prefetch_on_prefetch_hit;
          bool m_l1_mshr;
 
+         static std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
+         static std::map<uint64_t, uint64_t> curHitLLC;
+
+         static const uint64_t LLC_SETS = 2048;
+         static const uint64_t LLC_ASSOCIATIVITY = 16;
+         static const uint64_t MAX_COUNTER_VAL = 16;
+ 
+         static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
+         static uint64_t curSize[LLC_SETS];
+ 
+         uint64_t bhist_thd = 6;
+         uint64_t block_bits = 12;
+         uint64_t index_size = 32;
+         uint64_t sw_page_bitshift = 17;
+ 
          struct {
            UInt64 loads, stores;
            UInt64 load_misses, store_misses;
