@@ -24,10 +24,28 @@ namespace ParametricDramDirectoryMSI
 
          UInt64 m_access, m_miss, m_alloc, m_bypass;
          UInt32 m_conf_counter = 2;
-      public:
-         std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
-         std::map<IntPtr, uint64_t> curHit;
 
+         static std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
+         static std::deque<IntPtr> shadow_table;
+
+         static std::map<IntPtr, uint64_t> curHit;
+         static std::map<IntPtr, IntPtr> insert_pc;
+
+         static IntPtr lastPC;
+
+         uint64_t llt_size = 1024;
+         uint64_t phist_thd = 6;
+
+         uint64_t pfq_size = 8;
+         uint64_t shadow_table_size = 2;
+        
+         uint64_t pc_bits = 6;
+         uint64_t vpn_bits = 4;
+         uint64_t index_size = 32;
+
+         uint64_t hw_page_bitmask = 0xfffffffffffff000;    // 4kB  pages
+         uint64_t sw_page_bitshift = 17;                   // 12kB pages
+      public:
          TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count = 2);
          UInt32 get_size();
          void setL3Controller(CacheCntlr*);
