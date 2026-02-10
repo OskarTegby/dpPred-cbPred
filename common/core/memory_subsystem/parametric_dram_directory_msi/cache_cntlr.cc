@@ -14,7 +14,7 @@
 #include "tlb.cc"
 #include <cstring>
 
-std::map<uint64_t, std::pair<uint64_t, uint64_t> > bhist;
+std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
 std::map<uint64_t, uint64_t> curHitLLC;
 
 uint64_t bypass_thd = 6;
@@ -22,18 +22,17 @@ uint64_t bypass_thd = 6;
 uint64_t block_bits = 12;
 uint64_t index_size = 32;
 
-uint64_t page_bitshift = 17;
+uint64_t sw_page_bitshift = 17;
 
 static const uint64_t LLC_SETS = 2048;
 static const uint64_t LLC_ASSOCIATIVITY = 16;
 static const uint64_t MAX_COUNTER_VAL = 16;
 
-
-UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
-
 // LLC Data Structure
 uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
 uint64_t curSize[LLC_SETS];
+
+UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
 
 extern std::deque<IntPtr> recent_pfn;
 // Define to allow private L2 caches not to take the stack lock.
@@ -791,6 +790,14 @@ CacheCntlr::doPrefetch(IntPtr prefetch_address, SubsecondTime t_start)
    releaseStackLock(prefetch_address);
 }
 
+void
+CacheCntlr::capCounters(IntPtr block_hash)
+{
+    if (bhist[block_hash].second > MAX_COUNTER_VAL) {
+        bhist[block_hash].second = MAX_COUNTER_VAL;
+    }
+}
+
 IntPtr 
 CacheCntlr::findHash(IntPtr index, uint64_t bits) {
    IntPtr remaining = index;
@@ -803,15 +810,41 @@ CacheCntlr::findHash(IntPtr index, uint64_t bits) {
    return hash;
 }
 
-uint64_t
-CacheCntlr::getTagSw(IntPtr address) {
-    return (address >> page_bitshift);
+void
+CacheCntlr::updateCounters(uint64_t evict_tag)
+{
+    if (curHitLLC.count(evict_tag) == 0) {
+        return;
+    }
+
+    IntPtr block_hash = findHash(evict_tag, block_bits);
+    if (curHitLLC[evict_tag] == 0) {
+        bhist[block_hash].second++;
+        capCounters(block_hash);
+    } else {
+        bhist[block_hash].second = 0;
+    }
 }
 
-uint64_t
-CacheCntlr::getSetSw(IntPtr address) {
-    IntPtr throwOffset = (address >> 6);
-    return (throwOffset % 2048);
+bool
+CacheCntlr::shouldBypassLLC(uint64_t tag) {
+    return recentPFNContains(tag) && 
+           bhist[findHash(tag, block_bits)].second > bypass_thd;
+}
+
+void
+CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
+{
+    if (shouldBypassLLC(tag)) {
+        llcBypass++;             // llcBypass tracks software LLC bypass count
+        return;                  // software LLC bypassing
+    }
+
+    // Now eviction will surely occur
+    uint64_t evict_tag = llc[set][LLC_ASSOCIATIVITY - 1];
+    updateCounters(evict_tag);
+
+    updateLLCSw(tag, LLC_ASSOCIATIVITY, set);
 }
 
 bool
@@ -833,6 +866,30 @@ CacheCntlr::updateLLCSw(uint64_t latestTag, uint64_t pivotIndex, uint64_t set) {
     }
 }
 
+void
+CacheCntlr::insertIntoPartialSet(uint64_t tag, uint64_t set)
+{
+    uint64_t insert_pos = curSize[set];
+    curSize[set]++;
+    updateLLCSw(tag, insert_pos, set);
+}
+
+void
+CacheCntlr::handleLLCMiss(uint64_t tag, uint64_t set) {
+    llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
+
+    if (curSize[set] < LLC_ASSOCIATIVITY) {
+        insertIntoPartialSet(tag, set);
+    } else if (curSize[set] == LLC_ASSOCIATIVITY) {
+        handleFullSetMiss(tag, set);
+    }
+}
+
+void
+CacheCntlr::handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set) {
+    updateLLCSw(tag, pivotIndex, set);
+}
+
 int
 CacheCntlr::findTagInSet(uint64_t set, uint64_t tag)
 {
@@ -848,73 +905,15 @@ CacheCntlr::findTagInSet(uint64_t set, uint64_t tag)
     return -1;
  }
 
-void
-CacheCntlr::handleLLCHit(uint64_t tag, int pivotIndex, uint64_t set) {
-    updateLLCSw(tag, pivotIndex, set);
+uint64_t
+CacheCntlr::getTagSw(IntPtr address) {
+    return (address >> sw_page_bitshift);
 }
 
-void
-CacheCntlr::insertIntoPartialSet(uint64_t tag, uint64_t set)
-{
-    uint64_t insert_pos = curSize[set];
-    curSize[set]++;
-    updateLLCSw(tag, insert_pos, set);
-}
-
-bool
-CacheCntlr::shouldBypassLLC(uint64_t tag) {
-    return recentPFNContains(tag) && 
-           bhist[findHash(tag, block_bits)].second > bypass_thd;
-}
-
-void
-CacheCntlr::capCounters(IntPtr block_hash)
-{
-    if (bhist[block_hash].second > MAX_COUNTER_VAL) {
-        bhist[block_hash].second = MAX_COUNTER_VAL;
-    }
-}
-
-void
-CacheCntlr::updateCounters(uint64_t evict_tag)
-{
-    if (curHitLLC.count(evict_tag) == 0) {
-        return;
-    }
-
-    IntPtr block_hash = findHash(evict_tag, block_bits);
-    if (curHitLLC[evict_tag] == 0) {
-        bhist[block_hash].second++;
-        capCounters(block_hash);
-    } else {
-        bhist[block_hash].second = 0;
-    }
-}
-
-void
-CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
-{
-    if (shouldBypassLLC(tag)) {
-        llcBypass++;             // llcBypass tracks software LLC bypass count
-        return;                  // software LLC bypassing
-    }
-
-    // Now eviction will surely occur
-    uint64_t evict_tag = llc[set][LLC_ASSOCIATIVITY - 1];
-    updateCounters(evict_tag);
-
-    updateLLCSw(tag, LLC_ASSOCIATIVITY, set);
-}
-
-void
-CacheCntlr::handleLLCMiss(uint64_t tag, uint64_t set) {
-    llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
-
-    if (curSize[set] < LLC_ASSOCIATIVITY) {
-        insertIntoPartialSet(tag, set);
-    } else if (curSize[set] == LLC_ASSOCIATIVITY) {
-        handleFullSetMiss(tag, set);
-    }
+uint64_t
+CacheCntlr::getSetSw(IntPtr address) {
+    IntPtr throwOffset = (address >> 6);
+    return (throwOffset % 2048);
 }
 
 void
