@@ -594,8 +594,8 @@ MYLOG("bcast msg");
 }
 
 UInt32
-MemoryManager::giveSize (TLB * tlb) {
-    return tlb->give_size();
+MemoryManager::getSize (TLB * tlb) {
+    return tlb->get_size();
 }
 
 
