@@ -226,6 +226,7 @@ namespace ParametricDramDirectoryMSI
          static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
          static uint64_t alloc_blocks[LLC_SETS];
  
+         bool cbpred = true;
          uint64_t bhist_thd = 6;
          uint64_t block_bits = 12;
          uint64_t index_size = 32;
@@ -440,6 +441,10 @@ namespace ParametricDramDirectoryMSI
          uint64_t getSetSw(IntPtr address);
 
          void accessLLCSw(IntPtr address);
+
+         void load_settings(const std::string& config_file);
+         template<typename T>
+         bool read_config_value(const std::string& filename, const std::string& key, T& value);
 
          uint64_t getTagSwdef(IntPtr address);
          uint64_t getSetSwdef(IntPtr address);

@@ -33,6 +33,7 @@ namespace ParametricDramDirectoryMSI
 
          static IntPtr last_pc;
 
+         bool dppred = true;
          uint64_t llt_size = 1024;
          uint64_t phist_thd = 6;
 
@@ -45,6 +46,10 @@ namespace ParametricDramDirectoryMSI
 
          uint64_t hw_page_bitmask = 0xfffffffffffff000;    // 4kB  pages
          uint64_t sw_page_bitshift = 17;                   // 12kB pages
+
+         template<typename T>
+         bool read_config_value(const std::string& filename, const std::string& key, T& value);
+         void load_settings(const std::string& config_file);
       public:
          TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count = 2);
          UInt32 get_size();

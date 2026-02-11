@@ -29,6 +29,19 @@ TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UIn
 {
    LOG_ASSERT_ERROR((num_entries / associativity) * associativity == num_entries, "Invalid TLB configuration: num_entries(%d) must be a multiple of the associativity(%d)", num_entries, associativity);
 
+   // TODO: The repo_dir should be set automatically
+   const char* env_path = std::getenv("PREDICTOR_CONFIG");
+   std::string config_file;
+   if (env_path != nullptr) {
+       config_file = std::string(env_path);
+   } else {
+       std::string repo_dir = "/home/otegby/repos/code/";
+       std::string benchmark_dir = "dpPred-cbPred/benchmarks/";
+       std::string config_name = "predictor_config.txt";
+       config_file = repo_dir + benchmark_dir + config_name;
+   }
+
+   load_settings(config_file);
    registerStatsMetric(name, core_id, "access", &m_access);
    registerStatsMetric(name, core_id, "miss", &m_miss);
    registerStatsMetric(name, core_id, "bypass", &m_bypass);
@@ -161,28 +174,29 @@ void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = get_size() == llt_size;
+   if (dppred) {
+      IntPtr temp_vpn = address & hw_page_bitmask;
+      IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
+      IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
 
-   IntPtr temp_vpn = address & hw_page_bitmask;
-   IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
-   IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
+      if (in_llt) {
+         pc_hist[temp_vpn] = last_pc;
 
-   if (in_llt) {
-      pc_hist[temp_vpn] = last_pc;
+         if (shadow_table_search(temp_vpn)) {
+           flushing_vpn_column(temp_hash_vpn);
+         }
 
-      if (shadow_table_search(temp_vpn)) {
-        flushing_vpn_column(temp_hash_vpn);
-      }
-
-      bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > phist_thd; 
-      if (sat_thd) {
-          ++m_bypass;
-          shadow_table_insert(temp_vpn);
-          add_recent_pfn(temp_vpn);
-          return;
-      } else { 
-          llt_hits[temp_vpn] = 0;
-      }
-  }
+         bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > phist_thd; 
+         if (sat_thd) {
+             ++m_bypass;
+             shadow_table_insert(temp_vpn);
+             add_recent_pfn(temp_vpn);
+             return;
+         } else { 
+             llt_hits[temp_vpn] = 0;
+         }
+     }
+  } 
 
    bool eviction;
    IntPtr evict_addr; 
@@ -190,9 +204,54 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 
    ++m_alloc;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && in_llt) {
+   if (dppred && eviction && in_llt) {
       updating_phist(evict_addr);
    }
+}
+
+template<typename T>
+bool
+TLB::read_config_value(const std::string& filename, const std::string& key, T& value) {
+    std::ifstream file(filename.c_str());
+    if (!file.is_open()) return false;
+    
+    std::string line;
+    while (std::getline(file, line)) {
+        size_t pos = line.find('=');
+        if (pos != std::string::npos) {
+            std::string k = line.substr(0, pos);
+            std::string v = line.substr(pos + 1);
+            if (k == key) {
+                if (std::is_same<T, bool>::value) {
+                    value = (std::stoi(v) != 0);
+                } else if (std::is_same<T, uint64_t>::value) {
+                    value = std::stoull(v);
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void
+TLB::load_settings(const std::string& config_file) {
+    static bool printed = false;
+
+    read_config_value(config_file, "DPPRED", dppred);
+    read_config_value(config_file, "PHIST_THD", phist_thd);
+    read_config_value(config_file, "PFQ_SIZE", pfq_size);
+    read_config_value(config_file, "SHADOW_TABLE_SIZE", shadow_table_size);
+
+    if (!printed) {
+        std::cout << "=== LLT Settings ===" << std::endl;
+        std::cout << "DPPRED: " << dppred << std::endl;
+        std::cout << "PHIST_THD: " << phist_thd << std::endl;
+        std::cout << "PFQ_SIZE: " << pfq_size << std::endl;
+        std::cout << "SHADOW_TABLE_SIZE: " << shadow_table_size << std::endl;
+        std::cout << "====================" << std::endl;
+        printed = true;
+  }
 }
 
 }
