@@ -161,28 +161,29 @@ void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
    bool in_llt = get_size() == llt_size;
+   if (dppred) {
+      IntPtr temp_vpn = address & hw_page_bitmask;
+      IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
+      IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
 
-   IntPtr temp_vpn = address & hw_page_bitmask;
-   IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
-   IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
+      if (in_llt) {
+         pc_hist[temp_vpn] = last_pc;
 
-   if (in_llt) {
-      pc_hist[temp_vpn] = last_pc;
+         if (shadow_table_search(temp_vpn)) {
+           flushing_vpn_column(temp_hash_vpn);
+         }
 
-      if (shadow_table_search(temp_vpn)) {
-        flushing_vpn_column(temp_hash_vpn);
-      }
-
-      bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > phist_thd; 
-      if (sat_thd) {
-          ++m_bypass;
-          shadow_table_insert(temp_vpn);
-          add_recent_pfn(temp_vpn);
-          return;
-      } else { 
-          llt_hits[temp_vpn] = 0;
-      }
-  }
+         bool sat_thd = phist[temp_hash_vpn][temp_hash_pc] > phist_thd; 
+         if (sat_thd) {
+             ++m_bypass;
+             shadow_table_insert(temp_vpn);
+             add_recent_pfn(temp_vpn);
+             return;
+         } else { 
+             llt_hits[temp_vpn] = 0;
+         }
+     }
+  } 
 
    bool eviction;
    IntPtr evict_addr; 
@@ -190,7 +191,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
 
    ++m_alloc;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && in_llt) {
+   if (dppred && eviction && in_llt) {
       updating_phist(evict_addr);
    }
 }
