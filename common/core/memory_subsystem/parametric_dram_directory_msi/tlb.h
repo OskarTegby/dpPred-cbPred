@@ -33,6 +33,7 @@ namespace ParametricDramDirectoryMSI
 
          static IntPtr last_pc;
 
+         bool dppred = true;
          uint64_t llt_size = 1024;
          uint64_t phist_thd = 6;
 

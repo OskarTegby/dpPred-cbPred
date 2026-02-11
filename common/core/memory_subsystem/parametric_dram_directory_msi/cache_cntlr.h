@@ -226,6 +226,7 @@ namespace ParametricDramDirectoryMSI
          static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
          static uint64_t alloc_blocks[LLC_SETS];
  
+         bool cbpred = true;
          uint64_t bhist_thd = 6;
          uint64_t block_bits = 12;
          uint64_t index_size = 32;
