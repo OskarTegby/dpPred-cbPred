@@ -442,6 +442,10 @@ namespace ParametricDramDirectoryMSI
 
          void accessLLCSw(IntPtr address);
 
+         void load_settings(const std::string& config_file);
+         template<typename T>
+         bool read_config_value(const std::string& filename, const std::string& key, T& value);
+
          uint64_t getTagSwdef(IntPtr address);
          uint64_t getSetSwdef(IntPtr address);
          void updateLLCSwdef(uint64_t latestTag, uint64_t pivotIndex, uint64_t set);
