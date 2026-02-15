@@ -166,6 +166,15 @@ CacheCntlr::CacheCntlr(MemComponent::component_t mem_component,
    m_shmem_perf_global(NULL),
    m_shmem_perf_model(shmem_perf_model)
 {
+
+   // TODO: The repo_dir should be set automatically
+   std::string repo_dir = "/home/tegby/repos/code/";
+   std::string benchmark_dir = "dpPred-cbPred/benchmarks/";
+   std::string config_name = "predictor_config.txt";
+   std::string config_file = repo_dir + benchmark_dir + config_name; 
+
+   load_settings(config_file);
+
    m_core_id_master = m_core_id - m_core_id % m_shared_cores;
    Sim()->getStatsManager()->logTopology(name, core_id, m_core_id_master);
 
@@ -918,6 +927,47 @@ CacheCntlr::accessLLCSw(IntPtr address) {
         handleLLCHit(tag, pivotIndex, set);
     } else {
         handleLLCMiss(tag, set);
+    }
+}
+
+template<typename T>
+bool
+CacheCntlr::read_config_value(const std::string& filename, const std::string& key, T& value) {
+    std::ifstream file(filename.c_str());
+    if (!file.is_open()) return false;
+    
+    std::string line;
+    while (std::getline(file, line)) {
+        size_t pos = line.find('=');
+        if (pos != std::string::npos) {
+            std::string k = line.substr(0, pos);
+            std::string v = line.substr(pos + 1);
+            if (k == key) {
+                if (std::is_same<T, bool>::value) {
+                    value = (std::stoi(v) != 0);
+                } else if (std::is_same<T, uint64_t>::value) {
+                    value = std::stoull(v);
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void
+CacheCntlr::load_settings(const std::string& config_file) {
+    static bool printed = false;
+
+    read_config_value(config_file, "CBPRED", cbpred);
+    read_config_value(config_file, "BHIST_THD", bhist_thd);
+
+    if (!printed) {
+        std::cout << "=== LLC Settings ===" << std::endl;
+        std::cout << "CBPRED: " << cbpred << std::endl;
+        std::cout << "BHIST_THD: " << bhist_thd << std::endl;
+        std::cout << "====================" << std::endl;
+        printed = true;
     }
 }
 
