@@ -25,6 +25,10 @@ rm pin-3.6-97554-g31f0a167d-gcc-linux.tar.gz
 echo "Cloning benchmarks repository..."
 git clone https://github.com/OskarTegby/benchmarks benchmarks
 
+# Adding dependency for the black-box test
+sudo apt update
+sudo apt install -y numdiff
+
 echo "Done!"
 echo "Environment variables set:"
 echo "  SNIPER_ROOT=$SNIPER_ROOT"
