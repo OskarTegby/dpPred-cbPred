@@ -81,6 +81,7 @@ run_test() {
 
   if numdiff -a "$abs_tol" -r "$rel_tol" "$filtered_temp" "$filtered_expected" >/dev/null 2>&1; then
     echo "✓ PASSED: $benchmark (output matches expected)"
+    return 0
   else
     echo "✗ FAILED: $benchmark (output differs from expected)"
     echo ""
@@ -90,10 +91,11 @@ run_test() {
     diff "$filtered_temp" "$filtered_expected" || true
     echo "============"
     echo ""
+    return 1
   fi
 }
 
 # Run your tests
-run_test "parsec-canneal" 4 5 0.2
-run_test "splash2-barnes" 4 5 0.1
-run_test "npb-cg" 4 7 0.05
+run_test "parsec-canneal" 4 5 0.2 || exit 1
+run_test "splash2-barnes" 4 5 0.1 || exit 1
+run_test "npb-cg" 4 7 0.05 || exit 1
