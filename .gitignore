@@ -44,8 +44,11 @@ tools/pinversion
 
 # result files
 results/
+cluster_results
 !results/.DO_NOT_DELETE
 
+# plot files
+plots
 
 # dependencies
 boost_1_38_0

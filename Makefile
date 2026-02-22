@@ -155,6 +155,9 @@ clean: empty_config empty_deps
 	$(_CMD) $(MAKE) $(MAKE_QUIET) -C frontend/pin-frontend clean
 	$(_CMD) rm -f .build_os
 
+static: clean
+	$(MAKE) LINK_MODE=static
+
 distclean: clean
 	$(_MSG) '[DISTCL] python_kit'
 	$(_CMD) rm -rf python_kit
