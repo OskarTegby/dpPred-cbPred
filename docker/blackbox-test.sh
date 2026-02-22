@@ -63,7 +63,7 @@ run_test() {
 
   # Use absolute path to benchmarks directory
   docker exec -w "${PWD}" $CONTAINER_ID \
-    ./benchmarks/run-sniper -p "$benchmark" -n "$cores" >/dev/null
+    ./benchmarks/run-sniper -c run.cfg -p "$benchmark" -n "$cores" >/dev/null
 
   local temp_output="./sim.out"
   local expected_file="./benchmarks/expected_outputs/${benchmark}.out"
