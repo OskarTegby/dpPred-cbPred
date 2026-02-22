@@ -30,10 +30,16 @@ TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UIn
    LOG_ASSERT_ERROR((num_entries / associativity) * associativity == num_entries, "Invalid TLB configuration: num_entries(%d) must be a multiple of the associativity(%d)", num_entries, associativity);
 
    // TODO: The repo_dir should be set automatically
-   std::string repo_dir = "/home/tegby/repos/code/";
-   std::string benchmark_dir = "dpPred-cbPred/benchmarks/";
-   std::string config_name = "predictor_config.txt";
-   std::string config_file = repo_dir + benchmark_dir + config_name; 
+   const char* env_path = std::getenv("PREDICTOR_CONFIG");
+   std::string config_file;
+   if (env_path != nullptr) {
+       config_file = std::string(env_path);
+   } else {
+       std::string repo_dir = "/home/otegby/repos/code/";
+       std::string benchmark_dir = "dpPred-cbPred/benchmarks/";
+       std::string config_name = "predictor_config.txt";
+       config_file = repo_dir + benchmark_dir + config_name;
+   }
 
    load_settings(config_file);
    registerStatsMetric(name, core_id, "access", &m_access);
