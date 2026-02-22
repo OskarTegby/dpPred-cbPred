@@ -96,6 +96,6 @@ run_test() {
 }
 
 # Run your tests
-run_test "parsec-canneal" 2 5 0.2 || exit 1
-run_test "splash2-barnes" 2 5 0.1 || exit 1
-run_test "npb-cg" 2 7 0.05 || exit 1
+run_test "parsec-canneal" 4 5 0.2 || exit 1
+run_test "splash2-barnes" 4 5 0.1 || exit 1
+run_test "npb-cg" 4 7 0.05 || exit 1
