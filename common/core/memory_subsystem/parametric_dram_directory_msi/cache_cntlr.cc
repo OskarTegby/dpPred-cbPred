@@ -168,7 +168,7 @@ CacheCntlr::CacheCntlr(MemComponent::component_t mem_component,
 {
 
    // TODO: The repo_dir should be set automatically
-   std::string repo_dir = "/home/tegby/repos/code/";
+   std::string repo_dir = "/home/otegby/repos/code/";
    std::string benchmark_dir = "dpPred-cbPred/benchmarks/";
    std::string config_name = "predictor_config.txt";
    std::string config_file = repo_dir + benchmark_dir + config_name; 
