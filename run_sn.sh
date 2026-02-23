@@ -30,8 +30,11 @@ submit_job() {
 #$ -l h_rt=24:00:00
 
 # Set unique predictor config path for this job
-export PREDICTOR_CONFIG="$RESULTS_BASE/${exp_name}/predictor_config.txt"
-mkdir -p "$RESULTS_BASE/${exp_name}"
+RUN_ID="${exp_name}_\${JOB_ID}"
+RUN_DIR="$RESULTS_BASE/\$RUN_ID"
+
+export PREDICTOR_CONFIG="\$RUN_DIR/predictor_config.txt"
+mkdir -p "\$RUN_DIR"
 
 # Write predictor config
 cat > "$PREDICTOR_CONFIG" << PREDCFG
@@ -48,7 +51,7 @@ echo "DPPRED=$dppred CBPRED=$cbpred PHIST_THD=$phist_thd BHIST_THD=$bhist_thd"
 
 # Run all benchmarks in parallel within this job
 for benchmark in ${BENCHMARKS[@]}; do
-    output_dir="$RESULTS_BASE/${exp_name}/\${benchmark}"
+    output_dir="\$RUN_DIR/\${benchmark}"
     mkdir -p "\$output_dir"
 
     cat > "\${output_dir}/run_info.txt" << INFO
