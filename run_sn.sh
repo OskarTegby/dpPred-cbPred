@@ -84,7 +84,7 @@ submit_job "baseline" 0 0 0 0
 
 # dppred only: vary phist_thd from 0 to 6, cbpred=0
 for thd in $(seq 0 6); do
-  submit_job "dppred_phist${thd}" 1 0 $thd 0
+  submit_job "pthd${thd}" 1 0 $thd 0
 done
 
 # cbpred with dppred: vary both thresholds
@@ -92,6 +92,6 @@ done
 # Inner loop: bhist_thd
 for phist in $(seq 0 6); do
   for bhist in $(seq 0 6); do
-    submit_job "dppred_phist${phist}_cbpred_bhist${bhist}" 1 1 $phist $bhist
+    submit_job "pthd${phist}_bthd${bhist}" 1 1 $phist $bhist
   done
 done
