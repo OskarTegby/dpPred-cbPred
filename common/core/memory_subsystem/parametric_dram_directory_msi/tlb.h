@@ -25,10 +25,10 @@ namespace ParametricDramDirectoryMSI
          UInt64 m_access, m_miss, m_alloc, m_bypass;
          UInt32 m_conf_counter = 2;
 
-         static std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
+         std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
          static std::deque<IntPtr> shadow_table;
 
-         static std::map<IntPtr, uint64_t> llt_hits;
+         std::map<IntPtr, uint64_t> llt_hits;
          static std::map<IntPtr, IntPtr> pc_hist;
 
          static IntPtr last_pc;
