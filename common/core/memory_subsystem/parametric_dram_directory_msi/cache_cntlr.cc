@@ -40,9 +40,6 @@ Lock iolock;
 
 namespace ParametricDramDirectoryMSI
 {
-   std::map<uint64_t, std::pair<uint64_t, uint64_t>> CacheCntlr::bhist;
-   std::map<uint64_t, uint64_t> CacheCntlr::llc_hits;
- 
    uint64_t CacheCntlr::llc[2048][16] = {};
    uint64_t CacheCntlr::alloc_blocks[2048] = {};
 

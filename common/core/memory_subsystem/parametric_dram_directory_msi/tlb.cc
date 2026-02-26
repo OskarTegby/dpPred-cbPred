@@ -8,10 +8,7 @@ namespace ParametricDramDirectoryMSI
 {
 std::deque<IntPtr> pfq;
 
-   std::map<IntPtr, std::map<IntPtr, uint64_t>> TLB::phist;
    std::deque<IntPtr> TLB::shadow_table;
-
-   std::map<IntPtr, uint64_t> TLB::llt_hits;
    std::map<IntPtr, IntPtr> TLB::pc_hist;
 
    IntPtr TLB::last_pc = 0;
