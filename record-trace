@@ -143,8 +143,8 @@ if not os.path.exists(outputdir):
 # Check for ability to use VA to PA translation
 if use_pa:
   # If the Linux version is 4.0 or greater, and we don't have the CAP_SYS_ADMIN capability (bit 21), report an error
-  output = subprocess.check_output("echo -n $(( $(uname -r | cut -d . -f 2) >= 4 && ((0x$(grep CapEff /proc/self/status | cut -f 2) >> 20) & 1) ))", shell=True)
-  if '0' in output:
+  output = subprocess.check_output("echo -n $(( $(uname -r | cut -d . -f 1) >= 4 && !((0x$(grep CapEff /proc/self/status | cut -f 2) >> 20) & 1) ))", shell=True)
+  if '1' in output:
     print >> sys.stderr, '[SIFT_RECORDER]', 'Unable to use physical address translation with this kernel and current user capabilities, aborting.'
     sys.exit(1)
 

@@ -8,6 +8,10 @@
 #include <fstream>
 #include <assert.h>
 
+#ifndef PIN_BUILD
+#include <mutex>
+#endif
+
 class vistream;
 class vostream;
 
@@ -37,6 +41,11 @@ namespace Sift
          uint32_t m_id;
          bool m_requires_icache_per_insn;
          bool m_send_va2pa_mapping;
+
+         bool m_ended;
+#ifndef PIN_BUILD
+         std::mutex m_end_mutex;
+#endif
 
          void initResponse();
          void handleMemoryRequest(Record &respRec);

@@ -25,13 +25,14 @@ namespace ParametricDramDirectoryMSI
          UInt64 m_access, m_miss, m_alloc, m_bypass;
          UInt32 m_conf_counter = 2;
 
-         static std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
-         static std::deque<IntPtr> shadow_table;
+         std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
+         std::map<IntPtr, uint64_t> llt_hits;
+         
+         std::map<IntPtr, IntPtr> pc_hist;
+         std::deque<IntPtr> shadow_table;
 
-         static std::map<IntPtr, uint64_t> llt_hits;
-         static std::map<IntPtr, IntPtr> pc_hist;
-
-         static IntPtr last_pc;
+         IntPtr last_pc;
+         static std::deque<IntPtr> pfq;
 
          bool dppred = true;
          uint64_t llt_size = 1024;
@@ -52,6 +53,9 @@ namespace ParametricDramDirectoryMSI
          void load_settings(const std::string& config_file);
       public:
          TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count = 2);
+  
+         static Lock pfq_lock;
+  
          UInt32 get_size();
          void setL3Controller(CacheCntlr*);
          void setDeadBit (IntPtr address);
@@ -65,6 +69,7 @@ namespace ParametricDramDirectoryMSI
          void updating_phist(IntPtr evict_addr);
 
          void allocate(IntPtr address, SubsecondTime now);
+         static std::deque<IntPtr>& get_pfq() { return pfq; }
    };
 }
 

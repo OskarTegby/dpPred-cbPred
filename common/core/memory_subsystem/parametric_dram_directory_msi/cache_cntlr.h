@@ -223,6 +223,7 @@ namespace ParametricDramDirectoryMSI
          static const uint64_t LLC_ASSOCIATIVITY = 16;
          static const uint64_t MAX_COUNTER_VAL = 16;
  
+         static Lock llc_sw_lock;
          static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
          static uint64_t alloc_blocks[LLC_SETS];
  

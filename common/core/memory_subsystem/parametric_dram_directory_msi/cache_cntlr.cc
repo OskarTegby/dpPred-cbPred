@@ -11,12 +11,10 @@
 #include "cache_atd.h"
 #include "shmem_perf.h"
 #include "cache/cache_set_lru.h"
-#include "tlb.cc"
+#include "tlb.h"
 #include <cstring>
 
 UInt64 llcAcc, llcBypass, llcMiss, llcEvictions, llcMissDef;
-
-extern std::deque<IntPtr> pfq;
 
 // Define to allow private L2 caches not to take the stack lock.
 // Works in most cases, but seems to have some more bugs or race conditions, preventing it from being ready for prime time.
@@ -42,9 +40,10 @@ namespace ParametricDramDirectoryMSI
 {
    std::map<uint64_t, std::pair<uint64_t, uint64_t>> CacheCntlr::bhist;
    std::map<uint64_t, uint64_t> CacheCntlr::llc_hits;
- 
-   uint64_t CacheCntlr::llc[2048][16] = {};
-   uint64_t CacheCntlr::alloc_blocks[2048] = {};
+
+   Lock CacheCntlr::llc_sw_lock;
+   uint64_t CacheCntlr::llc[LLC_SETS][LLC_ASSOCIATIVITY] = {};
+   uint64_t CacheCntlr::alloc_blocks[LLC_SETS] = {};
 
 char CStateString(CacheState::cstate_t cstate) {
    switch(cstate)
@@ -852,6 +851,8 @@ CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
 
 bool
 CacheCntlr::recentPFNContains(IntPtr tag) {
+    auto& pfq = TLB::get_pfq();
+    ScopedLock sl(TLB::pfq_lock);
     return std::find(pfq.begin(), pfq.end(), tag) != pfq.end();
 }
 
@@ -926,6 +927,7 @@ CacheCntlr::accessLLCSw(IntPtr address) {
     uint64_t set = getSetSw(address);
     uint64_t tag = getTagSw(address);
  
+    ScopedLock sl(llc_sw_lock);
     int pivotIndex = findTagInSet(set, tag);
     bool is_hit = (pivotIndex != -1);
 
