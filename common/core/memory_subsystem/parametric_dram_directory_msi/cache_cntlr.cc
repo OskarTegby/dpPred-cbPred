@@ -41,8 +41,8 @@ Lock iolock;
 namespace ParametricDramDirectoryMSI
 {
    std::mutex CacheCntlr::llc_set_mutex[LLC_SETS];
-   uint64_t CacheCntlr::llc[2048][16] = {};
-   uint64_t CacheCntlr::alloc_blocks[2048] = {};
+   uint64_t CacheCntlr::llc[LLC_SETS][LLC_ASSOCIATIVITY] = {};
+   uint64_t CacheCntlr::alloc_blocks[LLC_SETS] = {};
 
 char CStateString(CacheState::cstate_t cstate) {
    switch(cstate)
