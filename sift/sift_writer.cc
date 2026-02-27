@@ -52,6 +52,7 @@ Sift::Writer::Writer(const char *filename, GetCodeFunc getCodeFunc, bool useComp
    , m_id(id)
    , m_requires_icache_per_insn(requires_icache_per_insn)
    , m_send_va2pa_mapping(send_va2pa_mapping)
+   , m_ended(false)
 {
    memset(hsize, 0, sizeof(hsize));
    memset(haddr, 0, sizeof(haddr));
@@ -114,6 +115,12 @@ void Sift::Writer::initResponse()
 
 void Sift::Writer::End()
 {
+#ifndef PIN_BUILD
+   std::lock_guard<std::mutex> lock(m_end_mutex);
+#endif
+   if (m_ended) return;
+   m_ended = true;
+
    #if VERBOSE > 0
    std::cerr << "[DEBUG:" << m_id << "] Write End" << std::endl;
    #endif
