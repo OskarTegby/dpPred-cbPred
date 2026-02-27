@@ -38,6 +38,9 @@ namespace Sift
          bool m_requires_icache_per_insn;
          bool m_send_va2pa_mapping;
 
+         bool m_ended;
+         std::mutex m_end_mutex;
+
          void initResponse();
          void handleMemoryRequest(Record &respRec);
          void send_va2pa(uint64_t va);
