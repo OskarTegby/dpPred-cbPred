@@ -115,7 +115,9 @@ void Sift::Writer::initResponse()
 
 void Sift::Writer::End()
 {
+#ifndef PIN_BUILD
    std::lock_guard<std::mutex> lock(m_end_mutex);
+#endif
    if (m_ended) return;
    m_ended = true;
 
