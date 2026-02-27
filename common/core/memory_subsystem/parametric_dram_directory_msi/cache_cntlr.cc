@@ -40,6 +40,7 @@ Lock iolock;
 
 namespace ParametricDramDirectoryMSI
 {
+   std::mutex CacheCntlr::llc_set_mutex[LLC_SETS];
    uint64_t CacheCntlr::llc[2048][16] = {};
    uint64_t CacheCntlr::alloc_blocks[2048] = {};
 
@@ -923,6 +924,7 @@ CacheCntlr::accessLLCSw(IntPtr address) {
     uint64_t set = getSetSw(address);
     uint64_t tag = getTagSw(address);
  
+    std::lock_guard<std::mutex> lock(llc_set_mutex[set]);
     int pivotIndex = findTagInSet(set, tag);
     bool is_hit = (pivotIndex != -1);
 

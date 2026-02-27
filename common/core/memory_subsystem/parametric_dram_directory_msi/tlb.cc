@@ -7,6 +7,7 @@
 namespace ParametricDramDirectoryMSI
 {
 std::deque<IntPtr> pfq;
+   std::mutex TLB::tlb_mutex;
 
    std::deque<IntPtr> TLB::shadow_table;
    std::map<IntPtr, IntPtr> TLB::pc_hist;
@@ -179,6 +180,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
       if (in_llt) {
          pc_hist[temp_vpn] = last_pc;
 
+         std::lock_guard<std::mutex> lock(tlb_mutex);
          if (shadow_table_search(temp_vpn)) {
            flushing_vpn_column(temp_hash_vpn);
          }

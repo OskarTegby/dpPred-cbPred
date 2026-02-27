@@ -25,6 +25,7 @@ namespace ParametricDramDirectoryMSI
          UInt64 m_access, m_miss, m_alloc, m_bypass;
          UInt32 m_conf_counter = 2;
 
+         static std::mutex tlb_mutex;
          std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
          static std::deque<IntPtr> shadow_table;
 

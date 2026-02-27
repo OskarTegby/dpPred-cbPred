@@ -18,6 +18,7 @@
 #include "subsecond_time.h"
 #include "shmem_perf.h"
 
+#include <mutex>
 
 #include "boost/tuple/tuple.hpp"
 
@@ -223,6 +224,7 @@ namespace ParametricDramDirectoryMSI
          static const uint64_t LLC_ASSOCIATIVITY = 16;
          static const uint64_t MAX_COUNTER_VAL = 16;
  
+         static std::mutex llc_set_mutex[LLC_SETS];
          static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
          static uint64_t alloc_blocks[LLC_SETS];
  
