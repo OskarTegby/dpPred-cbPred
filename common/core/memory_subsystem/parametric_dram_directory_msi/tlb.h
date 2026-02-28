@@ -32,7 +32,8 @@ namespace ParametricDramDirectoryMSI
          std::map<IntPtr, uint64_t> llt_hits;
          static std::map<IntPtr, IntPtr> pc_hist;
 
-         static IntPtr last_pc;
+         static std::atomic<IntPtr> last_pc;
+         static std::deque<IntPtr> pfq;
 
          bool dppred = true;
          uint64_t llt_size = 1024;
@@ -66,6 +67,7 @@ namespace ParametricDramDirectoryMSI
          void updating_phist(IntPtr evict_addr);
 
          void allocate(IntPtr address, SubsecondTime now);
+         static std::deque<IntPtr>& get_pfq() { return pfq; }
    };
 }
 

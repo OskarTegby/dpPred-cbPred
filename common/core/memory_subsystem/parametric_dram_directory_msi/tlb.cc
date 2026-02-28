@@ -6,13 +6,13 @@
 
 namespace ParametricDramDirectoryMSI
 {
-std::deque<IntPtr> pfq;
+std::deque<IntPtr> TLB::pfq;
    std::mutex TLB::tlb_mutex;
 
    std::deque<IntPtr> TLB::shadow_table;
    std::map<IntPtr, IntPtr> TLB::pc_hist;
 
-   IntPtr TLB::last_pc = 0;
+   std::atomic<IntPtr> TLB::last_pc{0};
 
 TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count)
    : m_size(num_entries)
@@ -74,6 +74,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
 
    if (hit) {
        if (get_size() == llt_size) {
+           std::lock_guard<std::mutex> lock(tlb_mutex);
            llt_hits[temp]++;
        }
        return true;
@@ -111,6 +112,7 @@ TLB::findHash(IntPtr index, uint64_t bits) {
 
 void
 TLB::add_recent_pfn(IntPtr address) {
+  auto& pfq = TLB::get_pfq();
 	address >>= sw_page_bitshift;
 	if (pfq.size() < pfq_size) {
 		pfq.push_back(address);
@@ -177,10 +179,10 @@ TLB::allocate(IntPtr address, SubsecondTime now)
       IntPtr temp_hash_vpn = findHash(temp_vpn, vpn_bits);
       IntPtr temp_hash_pc  = findHash(last_pc, pc_bits);
 
+      std::lock_guard<std::mutex> lock(tlb_mutex);
       if (in_llt) {
          pc_hist[temp_vpn] = last_pc;
 
-         std::lock_guard<std::mutex> lock(tlb_mutex);
          if (shadow_table_search(temp_vpn)) {
            flushing_vpn_column(temp_hash_vpn);
          }
@@ -204,6 +206,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    ++m_alloc;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
    if (dppred && eviction && in_llt) {
+      std::lock_guard<std::mutex> lock(tlb_mutex);
       updating_phist(evict_addr);
    }
 }
