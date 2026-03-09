@@ -63,7 +63,7 @@ shadow_table_size=$SHADOW_TABLE_SIZE
 INFO
 
     echo "  Running \$benchmark..."
-    $SNIPER -p "\$benchmark" -n $CORES -d "\$output_dir" \
+    $SNIPER -c run.cfg -p "\$benchmark" -n $CORES -d "\$output_dir" \
             > "\${output_dir}/stdout.log" 2> "\${output_dir}/stderr.log" &
 done
 
