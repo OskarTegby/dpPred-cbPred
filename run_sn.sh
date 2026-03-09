@@ -29,6 +29,10 @@ submit_job() {
 #$ -e $JOBS_DIR/${exp_name}.stderr
 #$ -l h_rt=24:00:00
 
+declare -A BENCHMARK_INPUTS
+BENCHMARK_INPUTS["parsec-canneal"]="simmedium"
+BENCHMARK_INPUTS["npb-cg"]="A"
+
 # Set unique predictor config path for this job
 RUN_ID="${exp_name}_\${JOB_ID}"
 RUN_DIR="$RESULTS_BASE/\$RUN_ID"
@@ -57,6 +61,7 @@ for benchmark in ${BENCHMARKS[@]}; do
     cat > "\${output_dir}/run_info.txt" << INFO
 exp_name=$exp_name
 benchmark=\$benchmark
+input=\${BENCHMARK_INPUTS[\$benchmark]}
 dppred=$dppred
 cbpred=$cbpred
 phist_thd=$phist_thd
@@ -66,7 +71,7 @@ shadow_table_size=$SHADOW_TABLE_SIZE
 INFO
 
     echo "  Running \$benchmark..."
-    $SNIPER -c run.cfg -p "\$benchmark" -n $CORES -d "\$output_dir" \
+    $SNIPER -c run.cfg -i "\${BENCHMARK_INPUTS[\$benchmark]}" -p "\$benchmark" -n $CORES -d "\$output_dir" \
             > "\${output_dir}/stdout.log" 2> "\${output_dir}/stderr.log" &
 done
 
