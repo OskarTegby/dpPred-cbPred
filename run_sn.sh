@@ -60,7 +60,7 @@ export PREDICTOR_CONFIG="\$RUN_DIR/predictor_config.txt"
 mkdir -p "\$RUN_DIR"
 
 # Write predictor config
-cat > "$PREDICTOR_CONFIG" << PREDCFG
+cat > "\$PREDICTOR_CONFIG" << PREDCFG
 DPPRED=$dppred
 CBPRED=$cbpred
 PHIST_THD=$phist_thd
