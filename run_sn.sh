@@ -12,6 +12,14 @@ CORES=4
 PFQ_SIZE=8
 SHADOW_TABLE_SIZE=2
 
+# Parse command line args
+DEBUG=0
+while getopts "d" opt; do
+  case $opt in
+  d) DEBUG=1 ;;
+  esac
+done
+
 mkdir -p "$JOBS_DIR"
 
 submit_job() {
@@ -22,16 +30,27 @@ submit_job() {
   local bhist_thd=$5
   local job_script="$JOBS_DIR/${exp_name}.sh"
 
+  if [ "$DEBUG" -eq 1 ]; then
+    local CANNEAL_INPUT="simsmall"
+    local NPB_INPUT="W"
+    local WALLTIME="06:00:00"
+    exp_name="debug_${exp_name}"
+  else
+    local CANNEAL_INPUT="simmedium"
+    local NPB_INPUT="A"
+    local WALLTIME="24:00:00"
+  fi
+
   cat >"$job_script" <<EOF
 #!/bin/bash
 #$ -N ${exp_name}
 #$ -o $JOBS_DIR/${exp_name}.stdout
 #$ -e $JOBS_DIR/${exp_name}.stderr
-#$ -l h_rt=24:00:00
+#$ -l h_rt=${WALLTIME}
 
 declare -A BENCHMARK_INPUTS
-BENCHMARK_INPUTS["parsec-canneal"]="simmedium"
-BENCHMARK_INPUTS["npb-cg"]="A"
+BENCHMARK_INPUTS["parsec-canneal"]="${CANNEAL_INPUT}"
+BENCHMARK_INPUTS["npb-cg"]="${NPB_INPUT}"
 
 # Set unique predictor config path for this job
 RUN_ID="${exp_name}_\${JOB_ID}"
@@ -84,19 +103,22 @@ EOF
   echo "Submitted: $exp_name"
 }
 
-# Baseline: both predictors off
-submit_job "baseline" 0 0 0 0
+if [ "$DEBUG" -eq 1 ]; then
+  submit_job "baseline" 0 0 0 0
+  submit_job "pthd6_bthd6" 1 1 6 6
+else
+  # Baseline: both predictors off
+  submit_job "baseline" 0 0 0 0
 
-# dppred only: vary phist_thd from 0 to 6, cbpred=0
-for thd in $(seq 0 6); do
-  submit_job "dppred_phist${thd}" 1 0 $thd 0
-done
-
-# cbpred with dppred: vary both thresholds
-# Outer loop: phist_thd
-# Inner loop: bhist_thd
-for phist in $(seq 0 6); do
-  for bhist in $(seq 0 6); do
-    submit_job "dppred_phist${phist}_cbpred_bhist${bhist}" 1 1 $phist $bhist
+  # dppred only: vary phist_thd from 0 to 6, cbpred=0
+  for thd in $(seq 0 6); do
+    submit_job "pthd${thd}" 1 0 $thd 0
   done
-done
+
+  # cbpred with dppred: vary both thresholds
+  for phist in $(seq 0 6); do
+    for bhist in $(seq 0 6); do
+      submit_job "pthd${phist}_bthd${bhist}" 1 1 $phist $bhist
+    done
+  done
+fi
