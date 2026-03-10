@@ -6,11 +6,15 @@ PREDICTOR_CONFIG="$REPO/benchmarks/predictor_config.txt"
 RESULTS_BASE="$REPO/results"
 JOBS_DIR="$RESULTS_BASE/jobs"
 BENCHMARKS=("parsec-canneal" "npb-cg")
-CORES=4
 
 # Default predictor config values
 PFQ_SIZE=8
 SHADOW_TABLE_SIZE=2
+
+# Per-benchmark core counts
+declare -A BENCHMARK_CORES
+BENCHMARK_CORES["parsec-canneal"]=2
+BENCHMARK_CORES["npb-cg"]=1
 
 # Parse command line args
 DEBUG=0
@@ -51,6 +55,9 @@ submit_job() {
 declare -A BENCHMARK_INPUTS
 BENCHMARK_INPUTS["parsec-canneal"]="${CANNEAL_INPUT}"
 BENCHMARK_INPUTS["npb-cg"]="${NPB_INPUT}"
+declare -A BENCHMARK_CORES
+BENCHMARK_CORES["parsec-canneal"]=${BENCHMARK_CORES["parsec-canneal"]}
+BENCHMARK_CORES["npb-cg"]=${BENCHMARK_CORES["npb-cg"]}
 
 # Set unique predictor config path for this job
 RUN_ID="${exp_name}_\${JOB_ID}"
@@ -72,7 +79,7 @@ PREDCFG
 echo "Running experiment: $exp_name"
 echo "DPPRED=$dppred CBPRED=$cbpred PHIST_THD=$phist_thd BHIST_THD=$bhist_thd"
 
-# Run all benchmarks in parallel within this job
+# Run all benchmarks sequentially within this job 
 for benchmark in ${BENCHMARKS[@]}; do
     output_dir="\$RUN_DIR/\${benchmark}"
     mkdir -p "\$output_dir"
@@ -88,9 +95,9 @@ bhist_thd=$bhist_thd
 pfq_size=$PFQ_SIZE
 shadow_table_size=$SHADOW_TABLE_SIZE
 INFO
-
-    echo "  Running \$benchmark..."
-    $SNIPER -c run.cfg -i "\${BENCHMARK_INPUTS[\$benchmark]}" -p "\$benchmark" -n $CORES -d "\$output_dir" \
+    echo "  Running \$benchmark with \${BENCHMARK_CORES[\$benchmark]} cores..."
+    $SNIPER -c run.cfg -i "\${BENCHMARK_INPUTS[\$benchmark]}" -p "\$benchmark" \
+            -n "\${BENCHMARK_CORES[\$benchmark]}" -d "\$output_dir" \
             > "\${output_dir}/stdout.log" 2> "\${output_dir}/stderr.log"
 done
 
