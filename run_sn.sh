@@ -91,10 +91,9 @@ INFO
 
     echo "  Running \$benchmark..."
     $SNIPER -c run.cfg -i "\${BENCHMARK_INPUTS[\$benchmark]}" -p "\$benchmark" -n $CORES -d "\$output_dir" \
-            > "\${output_dir}/stdout.log" 2> "\${output_dir}/stderr.log" &
+            > "\${output_dir}/stdout.log" 2> "\${output_dir}/stderr.log"
 done
 
-wait
 echo "Experiment $exp_name complete."
 EOF
 
