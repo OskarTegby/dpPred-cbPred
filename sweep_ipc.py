@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Sweep all result directories, compute IPC for parsec-canneal,
-and print speedup relative to the baseline run.
+Sweep all result directories, compute IPC for each benchmark,
+and print a separate speedup table per benchmark.
 
 LLC predictor (cbPred) detection: directory name contains 'bthd'.
 When cbPred is active, reported cycles are wrong; we use the
@@ -11,14 +11,13 @@ When cbPred is inactive, we use Instructions/Cycles directly from sim.out.
 
 import re
 import sys
-import os
 from pathlib import Path
 
 # ── tunables ────────────────────────────────────────────────────────────────
 MISS_PENALTY = 191
 HIT_LATENCY  = 40
 CACHE_LEVEL  = "L3"
-BENCHMARK    = "parsec-canneal"
+BENCHMARKS   = ["parsec-canneal", "npb-cg"]
 SIM_FILE     = "sim.out"
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -28,7 +27,9 @@ def parse_sim_out(path: Path):
     Parse a sim.out file.
 
     Returns (instructions, cycles, get_cache_stats) where:
-      - instructions / cycles are summed over all cores
+      - instructions are summed over all cores
+      - cycles is the max across cores (wall-clock; all active cores identical,
+        but max avoids picking up Core 0 if it exits early as the manager thread)
       - get_cache_stats(level) returns (accesses, misses, pred_accesses, pred_misses)
         with per-core cache traffic summed and global predictor stats taken once.
     """
@@ -102,30 +103,30 @@ def cbpred_enabled(dir_name: str) -> bool:
     return "bthd" in dir_name
 
 
-def collect_results(root: Path):
+def collect_results(root: Path, benchmark: str):
     """
-    Walk `root` for directories containing BENCHMARK/SIM_FILE.
-    Returns a list of dicts with keys: dir, ipc.
+    Walk `root` for directories containing `benchmark`/SIM_FILE.
+    Returns a list of dicts with keys: dir, ipc, method.
     """
     results = []
     for entry in sorted(root.iterdir()):
         if not entry.is_dir():
             continue
-        sim_path = entry / BENCHMARK / SIM_FILE
+        sim_path = entry / benchmark / SIM_FILE
         if not sim_path.exists():
             continue
 
         try:
             instructions, cycles, get_cache_stats = parse_sim_out(sim_path)
         except Exception as e:
-            print(f"  [WARN] {entry.name}: parse error — {e}", file=sys.stderr)
+            print(f"  [WARN] {entry.name}/{benchmark}: parse error — {e}", file=sys.stderr)
             continue
 
         if cbpred_enabled(entry.name):
             try:
                 llc_acc, llc_mis, pred_acc, pred_mis = get_cache_stats(CACHE_LEVEL)
             except Exception as e:
-                print(f"  [WARN] {entry.name}: cache parse error — {e}", file=sys.stderr)
+                print(f"  [WARN] {entry.name}/{benchmark}: cache parse error — {e}", file=sys.stderr)
                 continue
             ipc = ipc_corrected(instructions, cycles, llc_acc, llc_mis,
                                  pred_acc, pred_mis, MISS_PENALTY, HIT_LATENCY)
@@ -139,24 +140,24 @@ def collect_results(root: Path):
     return results
 
 
-def main():
-    root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
-
-    results = collect_results(root)
+def print_table(results, benchmark):
     if not results:
-        print("No results found.", file=sys.stderr)
-        sys.exit(1)
+        print(f"No results found for {benchmark}.", file=sys.stderr)
+        return
 
     # Find baseline IPC
     baseline = next((r for r in results if r["dir"].startswith("baseline")), None)
     if baseline is None:
-        print("No baseline_* directory found.", file=sys.stderr)
-        sys.exit(1)
+        print(f"No baseline_* directory found for {benchmark}.", file=sys.stderr)
+        return
     baseline_ipc = baseline["ipc"]
 
     # Print table
     col_w = max(len(r["dir"]) for r in results)
     header = f"{'Directory':<{col_w}}  {'IPC':>10}  {'Speedup':>9}  {'Method'}"
+    print(f"\n{'─' * len(header)}")
+    print(f"Benchmark: {benchmark}")
+    print('─' * len(header))
     print(header)
     print("-" * len(header))
 
@@ -164,6 +165,14 @@ def main():
         speedup = r["ipc"] / baseline_ipc
         marker  = " <-- baseline" if r["dir"] == baseline["dir"] else ""
         print(f"{r['dir']:<{col_w}}  {r['ipc']:>10.6f}  {speedup:>8.4f}x  {r['method']}{marker}")
+
+
+def main():
+    root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
+
+    for benchmark in BENCHMARKS:
+        results = collect_results(root, benchmark)
+        print_table(results, benchmark)
 
 
 if __name__ == "__main__":
