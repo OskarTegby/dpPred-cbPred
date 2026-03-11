@@ -51,6 +51,7 @@ submit_job() {
 #$ -o $JOBS_DIR/${exp_name}.stdout
 #$ -e $JOBS_DIR/${exp_name}.stderr
 #$ -l h_rt=${WALLTIME}
+ulimit -c 0
 
 declare -A BENCHMARK_INPUTS
 BENCHMARK_INPUTS["parsec-canneal"]="${CANNEAL_INPUT}"
