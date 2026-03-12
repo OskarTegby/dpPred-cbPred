@@ -191,8 +191,8 @@ def make_hetero_config(confignames, objname='core', extension='.cfg'):
 
 def va2pa_valid():
   # If the Linux version is 4.0 or greater, and we don't have the CAP_SYS_ADMIN capability (bit 21), report an error
-  output = subprocess.check_output("echo -n $(( $(uname -r | cut -d . -f 2) >= 4 && ((0x$(grep CapEff /proc/self/status | cut -f 2) >> 20) & 1) ))", shell=True)
-  if '0' in output:
+  output = subprocess.check_output("echo -n $(( $(uname -r | cut -d . -f 1) >= 4 && !((0x$(grep CapEff /proc/self/status | cut -f 2) >> 20) & 1) ))", shell=True)
+  if '1' in output:
     return False
   else:
     return True
