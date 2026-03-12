@@ -87,9 +87,13 @@ ADDRINT emuClockGettime(THREADID threadid, clockid_t clk_id, struct timespec *tp
             Sift::EmuReply res;
             bool emulated = thread_data[threadid].output->Emulate(Sift::EmuTypeGetTime, req, res);
 
-            sift_assert(emulated);
-            tp->tv_sec = res.gettime.time_ns / 1000000000;
-            tp->tv_nsec = res.gettime.time_ns % 1000000000;
+            if (emulated) {
+                tp->tv_sec = res.gettime.time_ns / 1000000000;
+                tp->tv_nsec = res.gettime.time_ns % 1000000000;
+            } else {
+                tp->tv_sec = 0;
+                tp->tv_nsec = 0;
+            }
          }
          return 0;
       default:
