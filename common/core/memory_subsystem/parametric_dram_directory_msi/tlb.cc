@@ -7,10 +7,7 @@
 namespace ParametricDramDirectoryMSI
 {
    std::deque<IntPtr> TLB::pfq;
-   std::deque<IntPtr> TLB::shadow_table;
-   std::map<IntPtr, IntPtr> TLB::pc_hist;
-
-   IntPtr TLB::last_pc = 0;
+   Lock TLB::pfq_lock;
 
 TLB::TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count)
    : m_size(num_entries)
@@ -109,7 +106,6 @@ TLB::findHash(IntPtr index, uint64_t bits) {
 
 void
 TLB::add_recent_pfn(IntPtr address) {
-  auto& pfq = TLB::get_pfq();
 	address >>= sw_page_bitshift;
 	if (pfq.size() < pfq_size) {
 		pfq.push_back(address);
@@ -187,7 +183,10 @@ TLB::allocate(IntPtr address, SubsecondTime now)
          if (sat_thd) {
              ++m_bypass;
              shadow_table_insert(temp_vpn);
-             add_recent_pfn(temp_vpn);
+             {
+                 ScopedLock sl(pfq_lock);
+                 add_recent_pfn(temp_vpn);
+             }
              return;
          } else { 
              llt_hits[temp_vpn] = 0;

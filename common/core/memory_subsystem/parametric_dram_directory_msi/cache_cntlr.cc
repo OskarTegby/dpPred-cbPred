@@ -38,8 +38,12 @@ Lock iolock;
 
 namespace ParametricDramDirectoryMSI
 {
-   uint64_t CacheCntlr::llc[2048][16] = {};
-   uint64_t CacheCntlr::alloc_blocks[2048] = {};
+   std::map<uint64_t, std::pair<uint64_t, uint64_t>> CacheCntlr::bhist;
+   std::map<uint64_t, uint64_t> CacheCntlr::llc_hits;
+
+   Lock CacheCntlr::llc_sw_lock;
+   uint64_t CacheCntlr::llc[LLC_SETS][LLC_ASSOCIATIVITY] = {};
+   uint64_t CacheCntlr::alloc_blocks[LLC_SETS] = {};
 
 char CStateString(CacheState::cstate_t cstate) {
    switch(cstate)
@@ -848,6 +852,7 @@ CacheCntlr::handleFullSetMiss(uint64_t tag, uint64_t set)
 bool
 CacheCntlr::recentPFNContains(IntPtr tag) {
     auto& pfq = TLB::get_pfq();
+    ScopedLock sl(TLB::pfq_lock);
     return std::find(pfq.begin(), pfq.end(), tag) != pfq.end();
 }
 
@@ -922,6 +927,7 @@ CacheCntlr::accessLLCSw(IntPtr address) {
     uint64_t set = getSetSw(address);
     uint64_t tag = getTagSw(address);
  
+    ScopedLock sl(llc_sw_lock);
     int pivotIndex = findTagInSet(set, tag);
     bool is_hit = (pivotIndex != -1);
 

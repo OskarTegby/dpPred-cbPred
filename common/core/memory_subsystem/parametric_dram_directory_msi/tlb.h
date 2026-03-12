@@ -26,12 +26,12 @@ namespace ParametricDramDirectoryMSI
          UInt32 m_conf_counter = 2;
 
          std::map<IntPtr, std::map<IntPtr, uint64_t>> phist;
-         static std::deque<IntPtr> shadow_table;
-
          std::map<IntPtr, uint64_t> llt_hits;
-         static std::map<IntPtr, IntPtr> pc_hist;
+         
+         std::map<IntPtr, IntPtr> pc_hist;
+         std::deque<IntPtr> shadow_table;
 
-         static IntPtr last_pc;
+         IntPtr last_pc;
          static std::deque<IntPtr> pfq;
 
          bool dppred = true;
@@ -53,6 +53,9 @@ namespace ParametricDramDirectoryMSI
          void load_settings(const std::string& config_file);
       public:
          TLB(String name, String cfgname, core_id_t core_id, UInt32 num_entries, UInt32 associativity, TLB *next_level, UInt32 conf_count = 2);
+  
+         static Lock pfq_lock;
+  
          UInt32 get_size();
          void setL3Controller(CacheCntlr*);
          void setDeadBit (IntPtr address);

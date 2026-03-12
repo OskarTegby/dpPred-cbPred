@@ -216,13 +216,14 @@ namespace ParametricDramDirectoryMSI
          bool m_prefetch_on_prefetch_hit;
          bool m_l1_mshr;
 
-         std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
-         std::map<uint64_t, uint64_t> llc_hits;
+         static std::map<uint64_t, std::pair<uint64_t, uint64_t>> bhist;
+         static std::map<uint64_t, uint64_t> llc_hits;
 
          static const uint64_t LLC_SETS = 2048;
          static const uint64_t LLC_ASSOCIATIVITY = 16;
          static const uint64_t MAX_COUNTER_VAL = 16;
  
+         static Lock llc_sw_lock;
          static uint64_t llc[LLC_SETS][LLC_ASSOCIATIVITY];
          static uint64_t alloc_blocks[LLC_SETS];
  
