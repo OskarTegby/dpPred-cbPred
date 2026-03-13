@@ -24,6 +24,14 @@ namespace ParametricDramDirectoryMSI
 
          UInt64 m_access, m_miss, m_alloc, m_bypass;
 	 UInt32 m_conf_counter = 2;
+
+         bool dppred = true;
+         uint64_t llt_size = 1024;
+         uint64_t phist_thd = 6;
+         uint64_t pc_bits = 6;
+         uint64_t vpn_bits = 4;
+         uint64_t hw_page_bitmask = 0xfffffffffffff000;
+
       public:
          std::map<IntPtr, std::map<IntPtr, uint64_t> > hitCounter;
 	 std::map<IntPtr, uint64_t> curHit;

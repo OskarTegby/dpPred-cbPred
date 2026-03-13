@@ -13,6 +13,7 @@ IntPtr lastPC;
 
 std::deque<IntPtr> shadow_table;
 uint64_t shadow_table_size = 2;
+uint64_t pfq_size = 8;
 
 std::map<IntPtr, IntPtr> insert_pc;
 
@@ -54,7 +55,7 @@ TLB::setDeadBit (IntPtr address){
 bool
 TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mptr, bool allocate_on_miss)
 {
-   IntPtr temp = address & 0xfffffffffffff000;
+   IntPtr temp = address & hw_page_bitmask;
    bool hit = m_cache.accessSingleLine(address, Cache::LOAD, NULL, 0, now, true);
    m_access++;
 
@@ -62,7 +63,7 @@ TLB::lookup(IntPtr address, SubsecondTime now, bool isIfetch, MemoryManager* mpt
        lastPC = address;
 
    if (hit) {
-       if (give_size() == 1024) {
+       if (give_size() == llt_size) {
            curHit[temp]++;
        }
        return true;
@@ -102,7 +103,7 @@ TLB::findHash (IntPtr ev_vpn, uint64_t bits)
 void
 addRecentPFN(IntPtr addr) {
 	addr >>= 17;
-	if (recentPFN.size() < 8) {
+	if (recentPFN.size() < pfq_size) {
 		recentPFN.push_back(addr);
 	} else {
 		recentPFN.pop_front();
@@ -137,43 +138,43 @@ TLB::shadow_table_insert (IntPtr vpn)
 void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
-   if (give_size() == 1024)
-        insert_pc[(address & 0xfffffffffffff000)] = lastPC;
+   if (give_size() == llt_size)
+        insert_pc[(address & hw_page_bitmask)] = lastPC;
 
-   IntPtr temp_vpn = address & 0xfffffffffffff000;
-   IntPtr temp_hash_vpn = findHash ((address & 0xfffffffffffff000), 4);
-   IntPtr temp_hash_pc =  findHash (lastPC, 6);
+   IntPtr temp_vpn = address & hw_page_bitmask;
+   IntPtr temp_hash_vpn = findHash ((address & hw_page_bitmask), vpn_bits);
+   IntPtr temp_hash_pc =  findHash (lastPC, pc_bits);
    ++m_alloc;
 
-   if (give_size() == 1024)
+   if (give_size() == llt_size)
    {
        bool res = shadow_table_search (temp_vpn);
        if (res == true)
        {
-           for (int i = 0;i < 64;i++)
+           for (int i = 0;i < (1 << pc_bits);i++)
            {
                hitCounter[temp_hash_vpn][i]= 0;
            }
        }
    }
 
-   if (give_size() == 1024 && hitCounter[temp_hash_vpn][temp_hash_pc] > 6) {
+   if (give_size() == llt_size && hitCounter[temp_hash_vpn][temp_hash_pc] > phist_thd) {
         ++m_bypass;
         shadow_table_insert (temp_vpn);
-	addRecentPFN(address & 0xfffffffffffff000);
+	addRecentPFN(address & hw_page_bitmask);
         return;
-   } else if (give_size() == 1024) {
-        curHit[(address & 0xfffffffffffff000)] = 0;
+   } else if (give_size() == llt_size) {
+        curHit[(address & hw_page_bitmask)] = 0;
    }
    bool eviction;
    IntPtr evict_addr;
    CacheBlockInfo evict_block_info;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && give_size() == 1024) {
+   if (eviction && give_size() == llt_size) {
 
-        IntPtr ev_vpn_hash = findHash ((evict_addr & 0xfffffffffffff000), 4);
-        IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & 0xfffffffffffff000)]), 6);
-        if (!curHit[(evict_addr & 0xfffffffffffff000)]){
+        IntPtr ev_vpn_hash = findHash ((evict_addr & hw_page_bitmask), vpn_bits);
+        IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & hw_page_bitmask)]), pc_bits);
+        if (!curHit[(evict_addr & hw_page_bitmask)]){
                 hitCounter[ev_vpn_hash][ev_pc_hash]++;
         } else {
                 hitCounter[ev_vpn_hash][ev_pc_hash] = 0;

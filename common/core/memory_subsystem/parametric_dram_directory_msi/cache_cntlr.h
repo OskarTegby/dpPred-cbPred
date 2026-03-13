@@ -216,6 +216,14 @@ namespace ParametricDramDirectoryMSI
          bool m_prefetch_on_prefetch_hit;
          bool m_l1_mshr;
 
+         static const uint64_t LLC_SETS = 2048;
+         static const uint64_t LLC_ASSOCIATIVITY = 16;
+         static const uint64_t MAX_COUNTER_VAL = 16;
+
+         bool cbpred = true;
+         uint64_t bhist_thd = 6;
+         uint64_t block_bits = 12;
+
          struct {
            UInt64 loads, stores;
            UInt64 load_misses, store_misses;

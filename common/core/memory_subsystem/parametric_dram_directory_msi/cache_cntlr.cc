@@ -798,14 +798,14 @@ CacheCntlr::findHash (IntPtr ev_vpn, uint64_t bits)
 uint64_t
 CacheCntlr::getTagSw(IntPtr address)
 {
-    return (address >> 17);
+    return (address >> 17);   // sw_page_bitshift = 17 (128 KB software pages)
 }
 
 uint64_t
 CacheCntlr::getSetIndexSw(IntPtr address)
 {
     IntPtr throwOffset = (address >> 6);
-   return (throwOffset % 2048);
+   return (throwOffset % LLC_SETS);
 }
 
 bool
@@ -864,15 +864,15 @@ CacheCntlr::accessLLCSw(IntPtr address)
     {
         llcMiss++; // llcMiss tracks software LLC bypass version misses  (default now for debugging)
 
-        if(curSize[setIndex] < 16)
+        if(curSize[setIndex] < LLC_ASSOCIATIVITY)
         {
-            pivotIndex = curSize[setIndex];      
+            pivotIndex = curSize[setIndex];
             curSize[setIndex]++;
         }
-        else if(curSize[setIndex] == 16)  
+        else if(curSize[setIndex] == LLC_ASSOCIATIVITY)
         {
 
-            if (recentPFNContains(tag) && hitCounterLLC[findHash(tag, 12)].second > 6)
+            if (recentPFNContains(tag) && hitCounterLLC[findHash(tag, block_bits)].second > bhist_thd)
             {
                 llcBypass++;             // llcBypass tracks software LLC bypass count
                 return;                  // software LLC bypassing
@@ -880,24 +880,24 @@ CacheCntlr::accessLLCSw(IntPtr address)
 
            // Now eviction will surely occur
 
-            uint64_t evict_tag = llc[setIndex][15];
+            uint64_t evict_tag = llc[setIndex][LLC_ASSOCIATIVITY - 1];
             if (curHitLLC.count(evict_tag))
             {
                 if(!curHitLLC[evict_tag])
                 {
-                    hitCounterLLC[findHash(evict_tag, 12)].second++;
-                    if (hitCounterLLC[findHash(evict_tag, 12)].second > 16)
+                    hitCounterLLC[findHash(evict_tag, block_bits)].second++;
+                    if (hitCounterLLC[findHash(evict_tag, block_bits)].second > MAX_COUNTER_VAL)
                     {
-                        hitCounterLLC[findHash(evict_tag, 12)].second = 16;
+                        hitCounterLLC[findHash(evict_tag, block_bits)].second = MAX_COUNTER_VAL;
                     }
                 }
                 else
                 {
-                    hitCounterLLC[findHash(evict_tag, 12)].second = 0;
+                    hitCounterLLC[findHash(evict_tag, block_bits)].second = 0;
                 }
-            }                
- 
-            pivotIndex = 16;
+            }
+
+            pivotIndex = LLC_ASSOCIATIVITY;
            
         }
     }
