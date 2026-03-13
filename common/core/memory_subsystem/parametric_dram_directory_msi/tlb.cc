@@ -150,7 +150,7 @@ TLB::shadow_table_insert (IntPtr vpn)
 void
 TLB::allocate(IntPtr address, SubsecondTime now)
 {
-   if (give_size() == llt_size)
+   if (dppred && give_size() == llt_size)
         insert_pc[(address & hw_page_bitmask)] = lastPC;
 
    IntPtr temp_vpn = address & hw_page_bitmask;
@@ -158,7 +158,7 @@ TLB::allocate(IntPtr address, SubsecondTime now)
    IntPtr temp_hash_pc =  findHash (lastPC, pc_bits);
    ++m_alloc;
 
-   if (give_size() == llt_size)
+   if (dppred && give_size() == llt_size)
    {
        bool res = shadow_table_search (temp_vpn);
        if (res == true)
@@ -170,19 +170,19 @@ TLB::allocate(IntPtr address, SubsecondTime now)
        }
    }
 
-   if (give_size() == llt_size && hitCounter[temp_hash_vpn][temp_hash_pc] > phist_thd) {
+   if (dppred && give_size() == llt_size && hitCounter[temp_hash_vpn][temp_hash_pc] > phist_thd) {
         ++m_bypass;
         shadow_table_insert (temp_vpn);
 	addRecentPFN(address & hw_page_bitmask);
         return;
-   } else if (give_size() == llt_size) {
+   } else if (dppred && give_size() == llt_size) {
         curHit[(address & hw_page_bitmask)] = 0;
    }
    bool eviction;
    IntPtr evict_addr;
    CacheBlockInfo evict_block_info;
    m_cache.insertSingleLine(address, NULL, &eviction, &evict_addr, &evict_block_info, NULL, now, NULL, false);
-   if (eviction && give_size() == llt_size) {
+   if (dppred && eviction && give_size() == llt_size) {
 
         IntPtr ev_vpn_hash = findHash ((evict_addr & hw_page_bitmask), vpn_bits);
         IntPtr ev_pc_hash = findHash ((insert_pc[(evict_addr & hw_page_bitmask)]), pc_bits);

@@ -983,7 +983,7 @@ CacheCntlr::processShmemReqFromPrevCache(CacheCntlr* requester, Core::mem_op_t m
    HitWhere::where_t hit_where = HitWhere::MISS;
    SharedCacheBlockInfo* cache_block_info = getCacheBlockInfo(address);
 
-   if (m_mem_component == 5 && onCacheMiss == true)
+   if (cbpred && m_mem_component == 5 && onCacheMiss == true)
    {
        accessLLCSw(address);
    }  
