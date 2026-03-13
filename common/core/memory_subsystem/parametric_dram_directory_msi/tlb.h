@@ -32,6 +32,10 @@ namespace ParametricDramDirectoryMSI
          uint64_t vpn_bits = 4;
          uint64_t hw_page_bitmask = 0xfffffffffffff000;
 
+         template<typename T>
+         bool read_config_value(const std::string& filename, const std::string& key, T& value);
+         void load_settings(const std::string& config_file);
+
       public:
          std::map<IntPtr, std::map<IntPtr, uint64_t> > hitCounter;
 	 std::map<IntPtr, uint64_t> curHit;

@@ -224,6 +224,10 @@ namespace ParametricDramDirectoryMSI
          uint64_t bhist_thd = 6;
          uint64_t block_bits = 12;
 
+         void load_settings(const std::string& config_file);
+         template<typename T>
+         bool read_config_value(const std::string& filename, const std::string& key, T& value);
+
          struct {
            UInt64 loads, stores;
            UInt64 load_misses, store_misses;
