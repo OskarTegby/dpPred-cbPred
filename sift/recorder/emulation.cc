@@ -87,9 +87,13 @@ ADDRINT emuClockGettime(THREADID threadid, clockid_t clk_id, struct timespec *tp
             Sift::EmuReply res;
             bool emulated = thread_data[threadid].output->Emulate(Sift::EmuTypeGetTime, req, res);
 
-            sift_assert(emulated);
-            tp->tv_sec = res.gettime.time_ns / 1000000000;
-            tp->tv_nsec = res.gettime.time_ns % 1000000000;
+            if (emulated) {
+               tp->tv_sec = res.gettime.time_ns / 1000000000;
+               tp->tv_nsec = res.gettime.time_ns % 1000000000;
+            } else {
+               tp->tv_sec = 0;
+               tp->tv_nsec = 0;
+            }
          }
          return 0;
       default:
@@ -111,16 +115,17 @@ ADDRINT emuGettimeofday(THREADID threadid, struct timeval *tv, struct timezone *
    Sift::EmuRequest req;
    Sift::EmuReply res;
    bool emulated = thread_data[threadid].output->Emulate(Sift::EmuTypeGetTime, req, res);
-   sift_assert(emulated);
 
    // Make sure time seems to always increase (even in fast-forward mode when there is no timing model)
    static uint64_t t_last = 0;
-   if (t_last >= res.gettime.time_ns)
-      res.gettime.time_ns = t_last + 1000;
-   t_last = res.gettime.time_ns;
+   if (emulated) {
+      if (t_last >= res.gettime.time_ns)
+         res.gettime.time_ns = t_last + 1000;
+      t_last = res.gettime.time_ns;
+   }
 
-   tv->tv_sec = res.gettime.time_ns / 1000000000;
-   tv->tv_usec = (res.gettime.time_ns / 1000) % 1000000;
+   tv->tv_sec = emulated ? res.gettime.time_ns / 1000000000 : 0;
+   tv->tv_usec = emulated ? (res.gettime.time_ns / 1000) % 1000000 : 0;
 
    return 0;
 }
